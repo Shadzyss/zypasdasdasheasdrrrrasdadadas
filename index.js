@@ -66,7 +66,7 @@ const checkVoiceConnection = () => {
                 guildId: process.env.GUILD_ID,
                 adapterCreator: guild.voiceAdapterCreator,
                 selfDeaf: true,
-                selfMute: false
+                selfMute: true
             });
             console.log("Bağlantı kesilmişti, kanala tekrar giriş yapıldı.");
         } catch (error) {
