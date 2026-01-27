@@ -4,12 +4,12 @@ const warnModel = require('../models/warnSchema'); // Şema yolunu kontrol et
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('uyarı-sorgula')
-        .setDescription('Bir kullanıcının uyarı geçmişini gösterir.')
-        .addUserOption(option => option.setName('kullanıcı').setDescription('Uyarılarına bakılacak kullanıcı').setRequired(false)),
+        .setDescription('Bir Kullanıcının Uyarı Geçmişini Gösterir.')
+        .addUserOption(option => option.setName('Kullanıcı').setDescription('Uyarılarına Bakılacak Kullanıcı').setRequired(false)),
 
     async execute(interaction) {
         // Eğer kullanıcı seçilmediyse komutu kullanan kişiyi hedef al
-        const target = interaction.options.getMember('kullanıcı') || interaction.member;
+        const target = interaction.options.getMember('Kullanıcı') || interaction.member;
         const { guild, member } = interaction;
 
         // --- ID'LER VE DİL KONTROLÜ ---
@@ -24,8 +24,8 @@ module.exports = {
             const noWarnEmbed = new EmbedBuilder()
                 .setTitle(executorIsEN ? "No Warnings" : "Uyarı Bulunamadı")
                 .setDescription(executorIsEN 
-                    ? `**${target} has no warnings in the system.**` 
-                    : `**${target} adlı kullanıcının sistemde hiç uyarısı bulunmuyor.**`)
+                    ? `**${target} Has No Warnings In The System.**` 
+                    : `**${target} Adlı Kullanıcının Sistemde Hiç Uyarısı Bulunmuyor.**`)
                 .setColor("Yellow");
             return interaction.reply({ embeds: [noWarnEmbed] });
         }

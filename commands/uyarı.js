@@ -4,13 +4,13 @@ const warnModel = require('../models/warnSchema'); // Şemanın yolunu kontrol e
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('uyarı')
-        .setDescription('Bir kullanıcıya uyarı verir.')
-        .addUserOption(option => option.setName('kullanıcı').setDescription('Uyarılanacak kullanıcı').setRequired(true))
-        .addStringOption(option => option.setName('sebep').setDescription('Uyarı sebebi').setRequired(true)),
+        .setDescription('Bir Kullanıcıya Uyarı Verir.')
+        .addUserOption(option => option.setName('Kullanıcı').setDescription('Uyarılanacak Kullanıcı').setRequired(true))
+        .addStringOption(option => option.setName('Sebep').setDescription('Uyarı Sebebi').setRequired(true)),
 
     async execute(interaction) {
-        const target = interaction.options.getMember('kullanıcı');
-        const reason = interaction.options.getString('sebep');
+        const target = interaction.options.getMember('Kullanıcı');
+        const reason = interaction.options.getString('Sebep');
         const { guild, member } = interaction;
 
         // --- ROL VE KANAL IDLERI ---
@@ -33,7 +33,7 @@ module.exports = {
             const errorEmbed = new EmbedBuilder()
                 .setTitle(executorIsEN ? "❌ No Permission" : "❌ Yetkin Yok")
                 .setDescription(executorIsEN 
-                    ? `**You must have the <@&${STAFF_ROLE}> role to use this command**`
+                    ? `**You Must Have The <@&${STAFF_ROLE}> Role To Use This Command**`
                     : `**Bu Komutu Kullanabilmek İçin <@&${STAFF_ROLE}> Adlı Rolüne Sahip Olmalısın**`)
                 .setColor("Red");
             return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
@@ -79,11 +79,11 @@ module.exports = {
 
         if (data.warnCount === 0) { // Yani 4. uyarıyı almışsa
             successEmbed.setDescription(executorIsEN 
-                ? `**${member} successfully warned ${target} for \`${reason}\`.\n⚠️ Total warnings reached \`4\`, so warn count has been reset.**`
+                ? `**${member} Successfully Warned ${target} For \`${reason}\`.\n⚠️ Total Warnings Reached \`4\`, So Warn Count Has Been Reset.**`
                 : `**${member} Başarıyla ${target} Adlı Kişi \`${reason}\` Sebebiyle Uyarı Verildi.\n⚠️ Kişinin Toplam Uyarı Sayısı \`4\` Olduğu İçin Uyarıları Sıfırlandı**`);
         } else {
             successEmbed.setDescription(executorIsEN
-                ? `**${member} successfully warned ${target} for \`${reason}\`. Total warning count --> \`${currentWarns}\`**`
+                ? `**${member} Successfully Warned ${target} For \`${reason}\`. Total Warning Count --> \`${currentWarns}\`**`
                 : `**${member} Başarıyla ${target} Adlı Kişi \`${reason}\` Sebebiyle Uyarı Verildi Kişinin Toplam Uyarı Sayısı --> \`${currentWarns}\`**`);
         }
         await interaction.reply({ embeds: [successEmbed] });

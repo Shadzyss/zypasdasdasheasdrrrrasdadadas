@@ -28,8 +28,9 @@ module.exports = {
                 mainDesc: `**Kullanıcı Komutlarını Görmek İçin 📗 Butonuna Tıklayın
 Abone Yetkilisinin Komutlarını Görmek İçin 📕 Butonuna Tıklayın
 Bot Yetkilisinin Komutlarını Görmek İçin 📘 Butonuna Tıklayın
-Sunucu Sahibinin Komutlarını Görmek İçin 👑 Butonuna Tıklayın
-Bot Sahibinin Komutlarını Görmek İçin 📙 Butonuna Tıklayın**`,
+Bot Sahibinin Komutlarını Görmek İçin 📙 Butonuna Tıklayın
+Yetkili Sorumlusunun Komutlarını Görmek İçin 📚 Butonuna Tıklayın 
+Sunucu Sahibinin Komutlarını Görmek İçin 👑 Butonuna Tıklayın**`,
                 
                 greenTitle: "Kullanıcı Komutları",
                 greenDesc: `**📗 \`/ping\` --> Botun Gecikmesini Görürsünüz
@@ -38,7 +39,9 @@ Bot Sahibinin Komutlarını Görmek İçin 📙 Butonuna Tıklayın**`,
 📗 \`/profil <kullanıcı>\` --> Etiketlediğiniz Kişinin Veya Kendinizin Profilini Görürsünüz
 📗 \`/keylerim\` --> Sahip Olduğunuz Keyleri Gösterir
 📗 \`/yetkililer\` --> Bot Yetkililerini Gösterir
-📗 \`/abone-top\` --> Abone Sıralamasını Gösterir**`,
+📗 \`/abone-top\` --> Abone Sıralamasını Gösterir
+📗 \`/uyarılar\` --> Uyarı Alan Yetkileri Listeler
+📗 \`uyarı-sorgula <kullanıcı>\` --> Etiketlenen Kişinin Uyarısını Sorgularsınız**`,
 
                 redTitle: "Abone Yetkilisinin Komutları",
                 redDesc: `**📕 \`/abone <kullanıcı>\` --> Etiketlenen Kişiye Abone Rolü Verir/Alır
@@ -54,24 +57,30 @@ Bot Sahibinin Komutlarını Görmek İçin 📙 Butonuna Tıklayın**`,
 📘 \`/hwid-sıfırla <anahatar> <sebep>\` --> Girilen Key'in HWID'ini Sıfırlar
 📘 \`/script-ad-değiştir <anahtar> <yeni-ad> <sebep>\` --> Girilen Key'in Script Adını Değiştirir**`,
 
-                crownTitle: "Sunucu Sahibinin Komutları",
-                crownDesc: `**👑 \`/herkese-rol-ver @rol\` --> Belirtilen Rolü Bütün Sunucudaki Üyelere Verir
-👑 \`/herkesten-rol-al @rol\` --> Belirtilen Rolü Bütün Sunucu Üyelerden Alır**`,
-
                 orangeTitle: "Bot Sahibinin Komutları",
                 orangeDesc: `**📙 \`/yetkili-ekle <kullanıcı>\` --> Etiketlenen Kişiyi Bot Yetkilisi Kategorisine Ekler
 📙 \`/yetkili-çıkar <kullanıcı>\` --> Etiketlenen Kişiyi Bot Yetkilisi Kategorisinden Çıkarır
 📙 \`/abone-ekle <kullanıcı> <sayı>\` --> Etiketlenen Kişiye Abone Sayı Ekler
 📙 \`/abone-sil <kullanıcı> <sayı>\` --> Etiketlenen Kişiden Abone Sayı Siler
-📙 \`/dm-mesaj <kullanıcı> <mesaj>\` --> Etiketlenen Kişiye Dm'den Mesaj Gönderir**`
+📙 \`/dm-mesaj <kullanıcı> <mesaj>\` --> Etiketlenen Kişiye Dm'den Mesaj Gönderir**`,
+
+                booksTitle: "Yetkili Sorumlusun Komutları",
+                booksDesc: `**📚 \`/uyarı <kullanıcı> <sebep\` --> Etiketlenen Yetkiliye Uyarı Verir
+📚 \`/uyarı-sil <kullanıcı> <sebep>\` --> Etiketlenen Yetkiliden Uyarı Siler
+📚 \`/uyarıları-sıfırla\` --> Bütün Yetkililerin Uyarılarını Sıfırlar**`,
+
+                crownTitle: "Sunucu Sahibinin Komutları",
+                crownDesc: `**👑 \`/herkese-rol-ver @rol\` --> Belirtilen Rolü Bütün Sunucudaki Üyelere Verir
+👑 \`/herkesten-rol-al @rol\` --> Belirtilen Rolü Bütün Sunucu Üyelerden Alır**`,
             },
             en: {
                 mainTitle: "Zyphera Help Menu",
                 mainDesc: `**Click 📗 to see User Commands
-Click 📕 to see Subscriber Staff Commands
-Click 📘 to see Bot Staff Commands
-Click 👑 to see Server Owner Commands
-Click 📙 to see Bot Owner Commands**`,
+Click 📕 To See Subscriber Staff Commands
+Click 📘 To See Bot Staff Commands
+Click 📙 To See Bot Owner Commands
+Click 📚 To See Staff Manager Commands
+Click 👑 To See Server Owner Commands**`,
 
                 greenTitle: "User Commands",
                 greenDesc: `**📗 \`/ping\` --> See the bot's latency
@@ -96,16 +105,21 @@ Click 📙 to see Bot Owner Commands**`,
 📘 \`/hwid-sıfırla <key> <reason>\` --> Reset HWID for a key
 📘 \`/script-ad-değiştir <key> <new-name> <reason>\` --> Change script name of a key**`,
 
-                crownTitle: "Server Owner Commands",
-                crownDesc: `**👑 \`/herkese-rol-ver @role\` --> Give a role to everyone in the server
-👑 \`/herkesten-rol-al @role\` --> Take a role from everyone in the server**`,
-
                 orangeTitle: "Bot Owner Commands",
                 orangeDesc: `**📙 \`/yetkili-ekle <user>\` --> Add user to Bot Staff category
 📙 \`/yetkili-çıkar <user>\` --> Remove user from Bot Staff category
 📙 \`/abone-ekle <user> <count>\` --> Add subscriber count to a user
 📙 \`/abone-sil <user> <count>\` --> Remove subscriber count from a user
-📙 \`/dm-mesaj <user> <message>\` --> Send a DM to a user**`
+📙 \`/dm-mesaj <user> <message>\` --> Send a DM to a user**`,
+                
+                booksTitle: "Staff Manager Commands",
+                booksDesc: `**📚 \`/uyarı <kullanıcı> <sebep\` --> Warns The Mentioned Staff Member
+📚 \`/uyarı-sil <kullanıcı> <sebep>\` --> Removes A Warning From The Mentioned Staff Member
+📚 \`/uyarıları-sıfırla\` --> Resets All Staff Members' Warnings**`,
+
+                crownTitle: "Server Owner Commands",
+                crownDesc: `**👑 \`/herkese-rol-ver @role\` --> Give a role to everyone in the server
+👑 \`/herkesten-rol-al @role\` --> Take a role from everyone in the server**`,
             }
         };
 
@@ -123,8 +137,9 @@ Click 📙 to see Bot Owner Commands**`,
                 new ButtonBuilder().setCustomId('btn_user').setEmoji('📗').setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder().setCustomId('btn_substaff').setEmoji('📕').setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder().setCustomId('btn_botstaff').setEmoji('📘').setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('btn_owner').setEmoji('👑').setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder().setCustomId('btn_botowner').setEmoji('📙').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('btn_yetkilis').setEmoji('📚').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('btn_owner').setEmoji('👑').setStyle(ButtonStyle.Secondary),
             );
 
         const response = await interaction.reply({ embeds: [embed], components: [row] });
@@ -164,16 +179,21 @@ Click 📙 to see Bot Owner Commands**`,
                     newDesc = t.blueDesc;
                     color = "Blue";
                     break;
-                case 'btn_owner':
-                    newTitle = t.crownTitle;
-                    newDesc = t.crownDesc;
-                    color = "Gold";
-                    break;
                 case 'btn_botowner':
                     newTitle = t.orangeTitle;
                     newDesc = t.orangeDesc;
                     color = "Orange";
                     break;
+                case 'btn_yetkilis':
+                    newTitle = t.booksTitle;
+                    newDesc = t.booksDesc;
+                    color = "Pink";
+                    break;
+                case 'btn_owner':
+                    newTitle = t.crownTitle;
+                    newDesc = t.crownDesc;
+                    color = "Gold";
+                    break;    
             }
 
             const newEmbed = new EmbedBuilder()

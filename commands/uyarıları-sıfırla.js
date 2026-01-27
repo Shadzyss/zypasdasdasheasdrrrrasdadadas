@@ -4,7 +4,7 @@ const warnModel = require('../models/warnSchema'); // Şema yolunu kontrol et
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('uyarıları-sıfırla')
-        .setDescription('Sunucudaki tüm yetkililerin uyarılarını temizler.'),
+        .setDescription('Sunucudaki Yüm Yetkililerin Uyarılarını Temizler.'),
 
     async execute(interaction) {
         const { guild, member } = interaction;
@@ -22,7 +22,7 @@ module.exports = {
             const errorEmbed = new EmbedBuilder()
                 .setTitle(executorIsEN ? "❌ Failed" : "❌ Başarısız")
                 .setDescription(executorIsEN 
-                    ? `**You must have the <@&${REQUIRED_ROLE_ID}> role to use this command**`
+                    ? `**You Must Have The <@&${REQUIRED_ROLE_ID}> Role To Use This Command**`
                     : `**Bu Komutu Kullanmak İçin <@&${REQUIRED_ROLE_ID}> Rolüne Sahip Olmalısınız**`)
                 .setColor("Red");
             return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
@@ -36,7 +36,7 @@ module.exports = {
         const successEmbed = new EmbedBuilder()
             .setTitle(executorIsEN ? "✅ Success" : "✅ Başarılı")
             .setDescription(executorIsEN
-                ? `**${member} has successfully reset all staff members' warnings.**`
+                ? `**${member} Has Successfully Reset All Staff members' Warnings.**`
                 : `**${member} Başarıyla Bütün Yetkililerin Uyarıları Sıfırlandı**`)
             .setColor("Green");
 

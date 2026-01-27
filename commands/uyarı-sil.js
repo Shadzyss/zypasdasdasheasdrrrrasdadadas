@@ -4,20 +4,20 @@ const warnModel = require('../models/warnSchema'); // Şema yolunu kontrol et
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('uyarı-sil')
-        .setDescription('Bir kullanıcının uyarısını/uyarılarını silsin.')
-        .addUserOption(option => option.setName('kullanıcı').setDescription('Uyarısı silinecek kullanıcı').setRequired(true))
-        .addStringOption(option => option.setName('sebep').setDescription('Uyarının silinme sebebi').setRequired(true))
-        .addIntegerOption(option => option.setName('miktar').setDescription('Silinecek uyarı sayısı').setRequired(false)),
+        .setDescription('Bir Kullanıcının Uyarısını/Uyarılarını Silsin.')
+        .addUserOption(option => option.setName('Kullanıcı').setDescription('Uyarısı Silinecek Kullanıcı').setRequired(true))
+        .addStringOption(option => option.setName('Sebep').setDescription('Uyarının Silinme Sebebi').setRequired(true))
+        .addIntegerOption(option => option.setName('Miktar').setDescription('Silinecek Uyarı Sayısı').setRequired(false)),
 
     async execute(interaction) {
-        const target = interaction.options.getMember('kullanıcı');
-        const reason = interaction.options.getString('sebep');
-        const amount = interaction.options.getInteger('miktar') || 1; // Miktar girilmezse 1 kabul et
+        const target = interaction.options.getMember('Kullanıcı');
+        const reason = interaction.options.getString('Sebep');
+        const amount = interaction.options.getInteger('Miktar') || 1; // Miktar girilmezse 1 kabul et
         const { guild, member } = interaction;
 
         // --- AYARLAR ---
-        const REQUIRED_ROLE_ID = "1465687261881569343";
-        const LOG_CHANNEL_ID = "1465664178923503718";
+        const REQUIRED_ROLE_ID = process.env.YETKILI_SORUMLUSU_ROL_ID;
+        const LOG_CHANNEL_ID = process.env.WARN_LOG_ID;
         const US_ROLE = process.env.ROLE_ID_ENGLISH;
 
         // --- DİL KONTROLLERİ ---
@@ -29,7 +29,7 @@ module.exports = {
             const errorEmbed = new EmbedBuilder()
                 .setTitle(executorIsEN ? "❌ No Permission" : "❌ Yetkin Yok")
                 .setDescription(executorIsEN 
-                    ? `**You must have the <@&${REQUIRED_ROLE_ID}> role to use this command**`
+                    ? `**You Must Have The <@&${REQUIRED_ROLE_ID}> Role To Use This Command**`
                     : `**Bu Komutu Kullanabilmek İçin <@&${REQUIRED_ROLE_ID}> Adlı Rolüne Sahip Olmalısın**`)
                 .setColor("Red");
             return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
@@ -41,7 +41,7 @@ module.exports = {
         if (!data || data.warnCount === 0) {
             const noWarn = new EmbedBuilder()
                 .setTitle(executorIsEN ? "Error" : "Hata")
-                .setDescription(executorIsEN ? "This user has no warnings to delete." : "Bu kullanıcının zaten silinecek bir uyarısı yok.")
+                .setDescription(executorIsEN ? "This User Has No Warnings To Delete." : "Bu Kullanıcının Zaten Silinecek Bir Uyarısı Yok.")
                 .setColor("Red");
             return interaction.reply({ embeds: [noWarn], ephemeral: true });
         }
@@ -66,7 +66,7 @@ module.exports = {
         const successEmbed = new EmbedBuilder()
             .setTitle(executorIsEN ? "✅ Success" : "✅ Başarılı")
             .setDescription(executorIsEN
-                ? `**${member} successfully deleted \`${silinecekMiktar}\` warning(s) for ${target} for \`${reason}\`. Total warning count --> \`${currentWarns}\`**`
+                ? `**${member} Successfully Deleted \`${silinecekMiktar}\` Warning(s) For ${target} For \`${reason}\`. Total Warning Count --> \`${currentWarns}\`**`
                 : `**${member} Başarıyla ${target} Adlı Kişi \`${reason}\` Sebebiyle \`${silinecekMiktar}\` Adet Uyarısı Silindi Kişinin Toplam Uyarı Sayısı --> \`${currentWarns}\`**`)
             .setColor("Green");
 

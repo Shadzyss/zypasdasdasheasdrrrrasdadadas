@@ -4,7 +4,7 @@ const warnModel = require('../models/warnSchema'); // Şema yolunu kontrol et
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('uyarılar')
-        .setDescription('Uyarı almış tüm yetkilileri listeler.'),
+        .setDescription('Uyarı Almış Tüm Yetkilileri Listeler.'),
 
     async execute(interaction) {
         const { guild, member } = interaction;
@@ -21,8 +21,8 @@ module.exports = {
             const emptyEmbed = new EmbedBuilder()
                 .setTitle(executorIsEN ? "No Warned Staff" : "Uyarı Alan Yetkili Yok")
                 .setDescription(executorIsEN 
-                    ? "**There are no staff members with active warnings.**" 
-                    : "**Şu anda aktif uyarısı olan herhangi bir yetkili bulunmuyor.**")
+                    ? "**There Are No Staff Members With Active Warnings.**" 
+                    : "**Şu Anda Aktif Bir Uyarısı Olan Yetkili Bulunmuyor.")
                 .setColor("Yellow");
             return interaction.reply({ embeds: [emptyEmbed] });
         }
@@ -32,7 +32,7 @@ module.exports = {
             .setColor("Random")
             .setFooter({ 
                 text: executorIsEN 
-                    ? "To see details, use /uyarı-sorgula <user>" 
+                    ? "To See Details, Use /uyarı-sorgula <user>" 
                     : "Uyarıları Detaylı Görmek İçin /uyarı-sorgula <kullanıcı>" 
             });
 
