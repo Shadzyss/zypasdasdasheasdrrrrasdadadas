@@ -5,7 +5,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('uyarı-sorgula')
         .setDescription('Bir Kullanıcının Uyarı Geçmişini Gösterir.')
-        .addUserOption(option => option.setName('Kullanıcı').setDescription('Uyarılarına Bakılacak Kullanıcı').setRequired(false)),
+        .addUserOption(option => option.setName('kullanıcı').setDescription('Uyarılarına Bakılacak Kullanıcı').setRequired(false)),
 
     async execute(interaction) {
         // Eğer kullanıcı seçilmediyse komutu kullanan kişiyi hedef al

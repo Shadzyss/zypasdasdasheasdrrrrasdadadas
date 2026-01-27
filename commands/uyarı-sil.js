@@ -4,10 +4,10 @@ const warnModel = require('../models/warnSchema'); // Şema yolunu kontrol et
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('uyarı-sil')
-        .setDescription('Bir Kullanıcının Uyarısını/Uyarılarını Silsin.')
-        .addUserOption(option => option.setName('Kullanıcı').setDescription('Uyarısı Silinecek Kullanıcı').setRequired(true))
-        .addStringOption(option => option.setName('Sebep').setDescription('Uyarının Silinme Sebebi').setRequired(true))
-        .addIntegerOption(option => option.setName('Miktar').setDescription('Silinecek Uyarı Sayısı').setRequired(false)),
+        .setDescription('Bir Kullanıcının Uyarısını/Uyarılarını Silin.')
+        .addUserOption(option => option.setName('kullanıcı').setDescription('Uyarısı Silinecek Kullanıcı').setRequired(true))
+        .addStringOption(option => option.setName('sebep').setDescription('Uyarının Silinme Sebebi').setRequired(true))
+        .addIntegerOption(option => option.setName('miktar').setDescription('Silinecek Uyarı Sayısı').setRequired(false)),
 
     async execute(interaction) {
         const target = interaction.options.getMember('kullanıcı');

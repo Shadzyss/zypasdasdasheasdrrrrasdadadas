@@ -5,8 +5,8 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('uyarı')
         .setDescription('Bir Kullanıcıya Uyarı Verir.')
-        .addUserOption(option => option.setName('Kullanıcı').setDescription('Uyarılanacak Kullanıcı').setRequired(true))
-        .addStringOption(option => option.setName('Sebep').setDescription('Uyarı Sebebi').setRequired(true)),
+        .addUserOption(option => option.setName('kullanıcı').setDescription('Uyarılanacak Kullanıcı').setRequired(true))
+        .addStringOption(option => option.setName('sebep').setDescription('Uyarı Sebebi').setRequired(true)),
 
     async execute(interaction) {
         const target = interaction.options.getMember('kullanıcı');
