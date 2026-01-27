@@ -9,8 +9,8 @@ module.exports = {
         .addStringOption(option => option.setName('Sebep').setDescription('Uyarı Sebebi').setRequired(true)),
 
     async execute(interaction) {
-        const target = interaction.options.getMember('Kullanıcı');
-        const reason = interaction.options.getString('Sebep');
+        const target = interaction.options.getMember('kullanıcı');
+        const reason = interaction.options.getString('sebep');
         const { guild, member } = interaction;
 
         // --- ROL VE KANAL IDLERI ---

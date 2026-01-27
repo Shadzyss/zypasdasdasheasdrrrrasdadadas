@@ -9,7 +9,7 @@ module.exports = {
 
     async execute(interaction) {
         // Eğer kullanıcı seçilmediyse komutu kullanan kişiyi hedef al
-        const target = interaction.options.getMember('Kullanıcı') || interaction.member;
+        const target = interaction.options.getMember('kullanıcı') || interaction.member;
         const { guild, member } = interaction;
 
         // --- ID'LER VE DİL KONTROLÜ ---

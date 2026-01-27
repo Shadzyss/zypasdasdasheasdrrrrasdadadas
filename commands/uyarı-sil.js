@@ -10,9 +10,9 @@ module.exports = {
         .addIntegerOption(option => option.setName('Miktar').setDescription('Silinecek Uyarı Sayısı').setRequired(false)),
 
     async execute(interaction) {
-        const target = interaction.options.getMember('Kullanıcı');
-        const reason = interaction.options.getString('Sebep');
-        const amount = interaction.options.getInteger('Miktar') || 1; // Miktar girilmezse 1 kabul et
+        const target = interaction.options.getMember('kullanıcı');
+        const reason = interaction.options.getString('sebep');
+        const amount = interaction.options.getInteger('miktar') || 1; // Miktar girilmezse 1 kabul et
         const { guild, member } = interaction;
 
         // --- AYARLAR ---
