@@ -66,7 +66,8 @@ module.exports = {
             await target.roles.add(WARN_ROLES[3]);
         } else if (currentWarns >= 4) {
             await target.roles.remove(WARN_ROLES[3]).catch(() => {});
-            data.warnCount = 0; // Uyarıyı sıfırla
+            data.warnCount = 0; // Uyarı sayısını sıfırla
+            data.logs = [];     // LOGLARI (GEÇMİŞİ) SIFIRLAYAN SATIR
         }
 
         await data.save();
