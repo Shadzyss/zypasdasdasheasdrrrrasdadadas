@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const warnModel = require('../models/warnSchema');; // Şemanın yolunu kontrol et
+const warnModel = require('../models/warnSchema'); // Şemanın yolunu kontrol et
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -24,14 +24,17 @@ module.exports = {
             3: process.env.UYARI_3X  // 3x
         };
 
+        // --- DİL KONTROLLERİ (Yeni Mantık: US Rolü Yoksa Her Zaman Türkçe) ---
+        const executorIsEN = member.roles.cache.has(US_ROLE);
+        const targetIsEN = target.roles.cache.has(US_ROLE);
+
         // --- YETKİ KONTROLÜ ---
         if (!member.roles.cache.has(STAFF_ROLE)) {
-            const isTR = member.roles.cache.has(TR_ROLE);
             const errorEmbed = new EmbedBuilder()
-                .setTitle(isTR ? "❌ Yetkin Yok" : "❌ No Permission")
-                .setDescription(isTR 
-                    ? `**Bu Komutu Kullanabilmek İçin <@&${STAFF_ROLE}> Adlı Rolüne Sahip Olmalısın**`
-                    : `**You must have the <@&${STAFF_ROLE}> role to use this command**`)
+                .setTitle(executorIsEN ? "❌ No Permission" : "❌ Yetkin Yok")
+                .setDescription(executorIsEN 
+                    ? `**You must have the <@&${STAFF_ROLE}> role to use this command**`
+                    : `**Bu Komutu Kullanabilmek İçin <@&${STAFF_ROLE}> Adlı Rolüne Sahip Olmalısın**`)
                 .setColor("Red");
             return interaction.reply({ embeds: [errorEmbed], ephemeral: true });
         }
@@ -68,32 +71,28 @@ module.exports = {
 
         await data.save();
 
-        // --- DİL KONTROLLERİ ---
-        const executorIsTR = member.roles.cache.has(TR_ROLE);
-        const targetIsTR = target.roles.cache.has(TR_ROLE);
-
         // --- KANAL YANITI (EXECUTOR DİLİNE GÖRE) ---
         const successEmbed = new EmbedBuilder()
-            .setTitle("✅ Başarılı")
+            .setTitle(executorIsEN ? "✅ Success" : "✅ Başarılı")
             .setColor("Green");
 
         if (data.warnCount === 0) { // Yani 4. uyarıyı almışsa
-            successEmbed.setDescription(executorIsTR 
-                ? `**${member} Başarıyla ${target} Adlı Kişi \`${reason}\` Sebebiyle Uyarı Verildi.\n⚠️ Kişinin Toplam Uyarı Sayısı \`4\` Olduğu İçin Uyarıları Sıfırlandı**`
-                : `**${member} successfully warned ${target} for \`${reason}\`.\n⚠️ Total warnings reached \`4\`, so warn count has been reset.**`);
+            successEmbed.setDescription(executorIsEN 
+                ? `**${member} successfully warned ${target} for \`${reason}\`.\n⚠️ Total warnings reached \`4\`, so warn count has been reset.**`
+                : `**${member} Başarıyla ${target} Adlı Kişi \`${reason}\` Sebebiyle Uyarı Verildi.\n⚠️ Kişinin Toplam Uyarı Sayısı \`4\` Olduğu İçin Uyarıları Sıfırlandı**`);
         } else {
-            successEmbed.setDescription(executorIsTR
-                ? `**${member} Başarıyla ${target} Adlı Kişi \`${reason}\` Sebebiyle Uyarı Verildi Kişinin Toplam Uyarı Sayısı --> \`${currentWarns}\`**`
-                : `**${member} successfully warned ${target} for \`${reason}\`. Total warning count --> \`${currentWarns}\`**`);
+            successEmbed.setDescription(executorIsEN
+                ? `**${member} successfully warned ${target} for \`${reason}\`. Total warning count --> \`${currentWarns}\`**`
+                : `**${member} Başarıyla ${target} Adlı Kişi \`${reason}\` Sebebiyle Uyarı Verildi Kişinin Toplam Uyarı Sayısı --> \`${currentWarns}\`**`);
         }
         await interaction.reply({ embeds: [successEmbed] });
 
         // --- DM MESAJI (TARGET DİLİNE GÖRE) ---
         const dmEmbed = new EmbedBuilder()
-            .setTitle(targetIsTR ? "Uyarı Aldınız" : "You Received a Warning")
-            .setDescription(targetIsTR 
-                ? `**⚒️ Uyarıyı Veren Yetkili --> ${member}\n🧾 Uyarı Sebebi --> \`${reason}\`\n⏱️ Uyarının Verildiği Zaman --> <t:${timestamp}:F>\n🔢 Toplam Uyarı Sayınız --> \`${currentWarns}\`**`
-                : `**⚒️ Moderator --> ${member}\n🧾 Reason --> \`${reason}\`\n⏱️ Time --> <t:${timestamp}:F>\n🔢 Total Warnings --> \`${currentWarns}\`**`)
+            .setTitle(targetIsEN ? "You Received a Warning" : "Uyarı Aldınız")
+            .setDescription(targetIsEN 
+                ? `**⚒️ Moderator --> ${member}\n🧾 Reason --> \`${reason}\`\n⏱️ Time --> <t:${timestamp}:F>\n🔢 Total Warnings --> \`${currentWarns}\`**`
+                : `**⚒️ Uyarıyı Veren Yetkili --> ${member}\n🧾 Uyarı Sebebi --> \`${reason}\`\n⏱️ Uyarının Verildiği Zaman --> <t:${timestamp}:F>\n🔢 Toplam Uyarı Sayınız --> \`${currentWarns}\`**`)
             .setColor("Random");
 
         await target.send({ embeds: [dmEmbed] }).catch(() => console.log("Kullanıcının DM'si kapalı."));
