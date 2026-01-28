@@ -1,170 +1,127 @@
 const { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
-const StaffStats = require('../models/StaffStats'); // Model yolunu kendine göre ayarla
-
-// Emojiler
-const EMOJIS = {
-    info: '<:zyphera_info:1466034688903610471>',
-    complaint: '<:zyphera_kalkan:1466034432183111761>',
-    apply: '<a:zyphera_parca:1464095414201352254>',
-    other: '<a:zyphera_yukleniyor:1464095331863101514>',
-    lock: '<:zyphera_lock:1466044664346968309>',
-    unlock: '<:zyphera_unlock:1466044688908947636>',
-    delete: '<:zyphera_cop:1466044646403870730>',
-    claim: '<:zyphera_yesilraptiye:1466044628506771588>',
-    unclaim: '📌'
-};
+const StaffStats = require('../models/StaffStats');
 
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction) {
         if (!interaction.isButton()) return;
-        console.log(`Butona basıldı: ${interaction.customId}`);
-        const { customId, guild, user, member } = interaction;
+
+        // Terminale log basıyoruz (Çalışıp çalışmadığını anlamak için)
+        console.log(`>>> Buton Algılandı: ${interaction.customId}`);
+
+        const { customId, guild, user, member, channel } = interaction;
+        
+        // .env kontrolü (Eğer bunlar undefined ise bot çöker)
         const staffRoleId = process.env.STAFF_TR_ROLE_ID;
         const ticketCategory = process.env.TICKET_KATEGORI;
 
-        // --- 1. TICKET OLUŞTURMA İŞLEMLERİ ---
-        if (['create_info', 'create_complaint', 'create_apply', 'create_other'].includes(customId)) {
-            await interaction.deferReply({ ephemeral: true });
+        if (!staffRoleId || !ticketCategory) {
+            console.error("HATA: .env dosyasındaki STAFF_TR_ROLE_ID veya TICKET_KATEGORI eksik!");
+            return interaction.reply({ content: "Sistem yapılandırması hatalı (.env kontrol et).", ephemeral: true });
+        }
 
-            const channelName = `ticket-${user.username}`;
-            
-            try {
-                // Kanalı oluştur
-                const channel = await guild.channels.create({
-                    name: channelName,
+        try {
+            // TICKET OLUŞTURMA
+            if (customId.startsWith('create_')) {
+                await interaction.deferReply({ ephemeral: true });
+
+                const ticketChannel = await guild.channels.create({
+                    name: `ticket-${user.username}`,
                     type: ChannelType.GuildText,
                     parent: ticketCategory,
                     permissionOverwrites: [
                         { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                        { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+                        { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles] },
                         { id: staffRoleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
                     ],
-                    // Topic'i veritabanı gibi kullanıyoruz: Sahip ID ve Yetkili ID burada tutulacak
                     topic: `Sahip: ${user.id} | Durum: Beklemede | Yetkili: Yok`
                 });
 
-                // Kontrol Butonları
                 const controlRow = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('ticket_claim').setLabel('Sahiplen').setEmoji(EMOJIS.claim).setStyle(ButtonStyle.Success),
-                    new ButtonBuilder().setCustomId('ticket_close').setLabel('Kilitle').setEmoji(EMOJIS.lock).setStyle(ButtonStyle.Secondary),
-                    new ButtonBuilder().setCustomId('ticket_delete').setLabel('Sil').setEmoji(EMOJIS.delete).setStyle(ButtonStyle.Danger)
+                    new ButtonBuilder().setCustomId('ticket_claim').setLabel('Sahiplen').setEmoji('<:zyphera_yesilraptiye:1466044628506771588>').setStyle(ButtonStyle.Success),
+                    new ButtonBuilder().setCustomId('ticket_close').setLabel('Kilitle').setEmoji('<:zyphera_lock:1466044664346968309>').setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder().setCustomId('ticket_delete').setLabel('Sil').setEmoji('<:zyphera_cop:1466044646403870730>').setStyle(ButtonStyle.Danger)
                 );
 
-                const welcomeEmbed = new EmbedBuilder()
-                    .setDescription(`Merhaba ${user}, destek talebiniz oluşturuldu.\nYetkililer en kısa sürede ilgilenecektir.\n\n**Konu:** ${customId.replace('create_', '').toUpperCase()}`)
-                    .setColor('Green');
+                await ticketChannel.send({ 
+                    content: `<@&${staffRoleId}> | ${user}`, 
+                    embeds: [new EmbedBuilder().setDescription(`Destek talebiniz açıldı. Yetkililer birazdan burada olacak.`).setColor('Blurple')],
+                    components: [controlRow]
+                });
 
-                await channel.send({ content: `<@&${staffRoleId}> | ${user}`, embeds: [welcomeEmbed], components: [controlRow] });
-                await interaction.editReply({ content: `Ticket oluşturuldu: ${channel}` });
-
-            } catch (error) {
-                console.error(error);
-                await interaction.editReply({ content: 'Ticket kanalı oluşturulurken bir hata oluştu.' });
-            }
-        }
-
-        // --- 2. TICKET SAHİPLENME (CLAIM) ---
-        if (customId === 'ticket_claim') {
-            if (!member.roles.cache.has(staffRoleId)) {
-                return interaction.reply({ content: 'Bu butonu sadece yetkililer kullanabilir!', ephemeral: true });
+                return await interaction.editReply({ content: `Kanalın açıldı: ${ticketChannel}` });
             }
 
-            const topic = interaction.channel.topic || "";
-            // Eğer topic içinde "Yetkili: <@" veya bir ID varsa zaten alınmıştır. "Yetkili: Yok" ise alınabilir.
-            if (!topic.includes("Yetkili: Yok")) {
-                return interaction.reply({ content: 'Bu ticket zaten sahiplenilmiş!', ephemeral: true });
+            // DİĞER TICKET İŞLEMLERİ
+            if (customId.startsWith('ticket_')) {
+                // Yetki kontrolü
+                if (!member.roles.cache.has(staffRoleId)) {
+                    return interaction.reply({ content: 'Bu butonu sadece yetkililer kullanabilir!', ephemeral: true });
+                }
+
+                // ANINDA CEVAP (Interaction Failed hatasını burada öldürüyoruz)
+                await interaction.deferUpdate();
+
+                // SAHİPLENME (CLAIM)
+                if (customId === 'ticket_claim') {
+                    const topic = channel.topic || "";
+                    if (!topic.includes("Yetkili: Yok")) return console.log("Zaten sahiplenilmiş.");
+
+                    await StaffStats.findOneAndUpdate(
+                        { userId: user.id, guildId: guild.id },
+                        { $inc: { ticketCount: 1 } },
+                        { upsert: true }
+                    );
+
+                    const ticketOwnerId = topic.split('|')[0].replace('Sahip:', '').trim();
+                    await channel.setTopic(`Sahip: ${ticketOwnerId} | Durum: İlgileniliyor | Yetkili: ${user.id}`);
+
+                    const claimRow = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setCustomId('ticket_unclaim').setLabel('Bırak').setEmoji('📌').setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId('ticket_close').setLabel('Kilitle').setEmoji('<:zyphera_lock:1466044664346968309>').setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId('ticket_delete').setLabel('Sil').setEmoji('<:zyphera_cop:1466044646403870730>').setStyle(ButtonStyle.Danger)
+                    );
+
+                    await interaction.message.edit({ components: [claimRow] });
+                    await channel.send({ content: `🛡️ Bu ticket ${user} tarafından sahiplenildi.` });
+                }
+
+                // BIRAKMA (UNCLAIM)
+                if (customId === 'ticket_unclaim') {
+                    const topic = channel.topic || "";
+                    if (!topic.includes(user.id)) return;
+
+                    await StaffStats.findOneAndUpdate(
+                        { userId: user.id, guildId: guild.id },
+                        { $inc: { ticketCount: -1 } }
+                    );
+
+                    const ticketOwnerId = topic.split('|')[0].replace('Sahip:', '').trim();
+                    await channel.setTopic(`Sahip: ${ticketOwnerId} | Durum: Beklemede | Yetkili: Yok`);
+
+                    const resetRow = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setCustomId('ticket_claim').setLabel('Sahiplen').setEmoji('<:zyphera_yesilraptiye:1466044628506771588>').setStyle(ButtonStyle.Success),
+                        new ButtonBuilder().setCustomId('ticket_close').setLabel('Kilitle').setEmoji('<:zyphera_lock:1466044664346968309>').setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId('ticket_delete').setLabel('Sil').setEmoji('<:zyphera_cop:1466044646403870730>').setStyle(ButtonStyle.Danger)
+                    );
+
+                    await interaction.message.edit({ components: [resetRow] });
+                    await channel.send({ content: `📌 Ticket sahipliği ${user} tarafından bırakıldı.` });
+                }
+
+                // SİLME
+                if (customId === 'ticket_delete') {
+                    await channel.send("Kanal 5 saniye içinde siliniyor...");
+                    setTimeout(() => channel.delete().catch(() => {}), 5000);
+                }
             }
 
-            // MongoDB: Sayı Arttır (+1)
-            await StaffStats.findOneAndUpdate(
-                { userId: user.id, guildId: guild.id },
-                { $inc: { ticketCount: 1 } },
-                { upsert: true, new: true }
-            );
-
-            // Kanal Açıklamasını Güncelle
-            const ticketOwnerId = topic.split('|')[0].replace('Sahip:', '').trim();
-            await interaction.channel.setTopic(`Sahip: ${ticketOwnerId} | Durum: İlgileniliyor | Yetkili: ${user.id}`);
-
-            // Butonları Güncelle (Sahiplen yerine Bırak butonu koy)
-            const newRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('ticket_unclaim').setLabel('Bırak').setEmoji(EMOJIS.unclaim).setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('ticket_close').setLabel('Kilitle').setEmoji(EMOJIS.lock).setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('ticket_delete').setLabel('Sil').setEmoji(EMOJIS.delete).setStyle(ButtonStyle.Danger)
-            );
-
-            const embed = new EmbedBuilder().setDescription(`Bu ticket ${user} tarafından sahiplenildi! ${EMOJIS.claim}`).setColor('Green');
-            await interaction.message.edit({ components: [newRow] });
-            await interaction.reply({ embeds: [embed] });
-        }
-
-        // --- 3. SAHİPLİĞİ BIRAKMA (UNCLAIM) ---
-        if (customId === 'ticket_unclaim') {
-            if (!member.roles.cache.has(staffRoleId)) return interaction.reply({ content: 'Yetkin yok!', ephemeral: true });
-
-            const topic = interaction.channel.topic || "";
-            
-            // Sadece sahiplenen kişi bırakabilir
-            if (!topic.includes(user.id)) {
-                 return interaction.reply({ content: 'Bu ticketi sen sahiplenmedin, bırakamazsın!', ephemeral: true });
+        } catch (error) {
+            console.error("BİR HATA OLUŞTU:", error);
+            // Eğer daha önce cevap verilmediyse hata mesajı gönder
+            if (!interaction.deferred && !interaction.replied) {
+                await interaction.reply({ content: "İşlem sırasında bir hata oluştu!", ephemeral: true });
             }
-
-            // MongoDB: Sayı Eksilt (-1)
-            await StaffStats.findOneAndUpdate(
-                { userId: user.id, guildId: guild.id },
-                { $inc: { ticketCount: -1 } },
-                { upsert: true }
-            );
-
-            // Kanal Açıklamasını Sıfırla
-            const ticketOwnerId = topic.split('|')[0].replace('Sahip:', '').trim();
-            await interaction.channel.setTopic(`Sahip: ${ticketOwnerId} | Durum: Beklemede | Yetkili: Yok`);
-
-            // Butonları Eski Haline Getir
-            const resetRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('ticket_claim').setLabel('Sahiplen').setEmoji(EMOJIS.claim).setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('ticket_close').setLabel('Kilitle').setEmoji(EMOJIS.lock).setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('ticket_delete').setLabel('Sil').setEmoji(EMOJIS.delete).setStyle(ButtonStyle.Danger)
-            );
-
-            const embed = new EmbedBuilder().setDescription(`${user} ticket sahipliğini bıraktı. ${EMOJIS.unclaim}`).setColor('Orange');
-            await interaction.message.edit({ components: [resetRow] });
-            await interaction.reply({ embeds: [embed] });
-        }
-
-        // --- 4. TICKET KAPATMA/AÇMA/SİLME ---
-        if (customId === 'ticket_close') {
-            if (!member.roles.cache.has(staffRoleId)) return interaction.reply({ content: 'Yetkin yok!', ephemeral: true });
-            
-            const topic = interaction.channel.topic || "";
-            const ticketOwnerId = topic.split('|')[0].replace('Sahip:', '').trim();
-
-            await interaction.channel.permissionOverwrites.edit(ticketOwnerId, { ViewChannel: false });
-
-            const lockRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('ticket_open').setLabel('Aç').setEmoji(EMOJIS.unlock).setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('ticket_delete').setLabel('Sil').setEmoji(EMOJIS.delete).setStyle(ButtonStyle.Danger)
-            );
-
-            await interaction.reply({ content: `Ticket kapatıldı ${EMOJIS.lock}.` });
-            await interaction.message.edit({ components: [lockRow] });
-        }
-
-        if (customId === 'ticket_open') {
-            if (!member.roles.cache.has(staffRoleId)) return interaction.reply({ content: 'Yetkin yok!', ephemeral: true });
-            const topic = interaction.channel.topic || "";
-            const ticketOwnerId = topic.split('|')[0].replace('Sahip:', '').trim();
-
-            await interaction.channel.permissionOverwrites.edit(ticketOwnerId, { ViewChannel: true });
-            await interaction.reply({ content: `Ticket tekrar açıldı ${EMOJIS.unlock}.` });
-            // Not: Buradan sonra butonları tekrar claim/unclaim durumuna göre düzeltmek gerekebilir ama basitleştirilmiş haliyle bırakıyorum.
-        }
-
-        if (customId === 'ticket_delete') {
-            if (!member.roles.cache.has(staffRoleId)) return interaction.reply({ content: 'Yetkin yok!', ephemeral: true });
-            await interaction.reply(`Ticket siliniyor... ${EMOJIS.delete}`);
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
         }
     },
 };
