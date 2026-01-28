@@ -7,7 +7,7 @@ const {
     PermissionFlagsBits, 
     ChannelType 
 } = require('discord.js');
-const Yetkili = require('./models/Yetkili'); // Model yolunu kontrol et
+const Yetkili = require('../models/Yetkili'); // Model yolunu kontrol et
 
 module.exports = {
     data: new SlashCommandBuilder()
