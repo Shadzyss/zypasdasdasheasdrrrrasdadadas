@@ -8,7 +8,6 @@ module.exports = {
         if (interaction.isChatInputCommand()) {
             const command = interaction.client.commands.get(interaction.commandName);
             if (!command) return;
-
             try {
                 await command.execute(interaction);
             } catch (error) {
@@ -23,7 +22,7 @@ module.exports = {
             const staffRole = process.env.STAFF_TR_ROLE_ID;
             const category = process.env.TICKET_KATEGORI;
 
-            // Ticket Açma
+            // Ticket Açma Bölümü
             if (customId.startsWith('tr_')) {
                 const types = {
                     'tr_info': { name: 'Bilgi', emoji: '<:zyphera_info:1466034688903610471>' },
@@ -79,10 +78,17 @@ module.exports = {
 
                 await Yetkili.findOneAndUpdate({ yetkiliId: user.id }, { $inc: { toplamTicketSahiplenme: 1 } }, { upsert: true });
 
-                const editedDesc = mainMsg.embeds[0].description.replace('`Ticket Sahiplenilmedi`', `<@${user.id}>`);
-                await mainMsg.edit({ embeds: [EmbedBuilder.from(mainMsg.embeds[0]).setDescription(editedDesc)] });
+                // NOKTASAL ATIŞ: Sadece yetkili satırını günceller, ticket sahibini ellemez.
+                const currentDesc = mainMsg.embeds[0].description;
+                const updatedDesc = currentDesc.replace(/Ticketi Sahiplenen Yetkili --> .*/, `Ticketi Sahiplenen Yetkili --> <@${user.id}>`);
+                
+                // Ana mesajdaki sahiplenme butonunu devre dışı bırakıyoruz
+                const disabledRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('claim_tr').setEmoji('1466044628506771588').setStyle(ButtonStyle.Success).setDisabled(true),
+                    new ButtonBuilder().setCustomId('lock_tr').setEmoji('1466044664346968309').setStyle(ButtonStyle.Secondary)
+                );
 
-                if (message.editable && message.id !== mainMsg.id) await message.edit({ components: [] });
+                await mainMsg.edit({ embeds: [EmbedBuilder.from(mainMsg.embeds[0]).setDescription(updatedDesc)], components: [disabledRow] });
 
                 const claimMsg = await interaction.reply({ 
                     embeds: [new EmbedBuilder().setColor('Green').setDescription(`**Ticket <@${user.id}> Tarafından Sahiplenildi Ticket Sahipliğini Bırakmak İçin 📌 Butonuna Tıklayın**`)], 
@@ -95,22 +101,37 @@ module.exports = {
             // Bırakma (Unclaim)
             if (customId === 'unclaim_tr') {
                 if (!member.roles.cache.has(staffRole)) return;
+
                 await Yetkili.findOneAndUpdate({ yetkiliId: user.id }, { $inc: { toplamTicketSahiplenme: -1 } });
 
                 const pins = await channel.messages.fetchPinned();
                 const mainMsg = pins.find(m => m.embeds[0]?.description.includes('Ticket Bilgileri'));
-                const resetDesc = mainMsg.embeds[0].description.replace(`<@${user.id}>`, '`Ticket Sahiplenilmedi`');
-                await mainMsg.edit({ embeds: [EmbedBuilder.from(mainMsg.embeds[0]).setDescription(resetDesc)] });
+                
+                // Ana embeddeki yetkiliyi temizle
+                const resetDesc = mainMsg.embeds[0].description.replace(/Ticketi Sahiplenen Yetkili --> <@\d+>/, `Ticketi Sahiplenen Yetkili --> \`Ticket Sahiplenilmedi\``);
+                
+                // Ana mesajdaki butonu tekrar aktif et
+                const enabledRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('claim_tr').setEmoji('1466044628506771588').setStyle(ButtonStyle.Success).setDisabled(false),
+                    new ButtonBuilder().setCustomId('lock_tr').setEmoji('1466044664346968309').setStyle(ButtonStyle.Secondary)
+                );
+
+                await mainMsg.edit({ embeds: [EmbedBuilder.from(mainMsg.embeds[0]).setDescription(resetDesc)], components: [enabledRow] });
 
                 await message.unpin();
                 await interaction.update({ components: [] });
+
+                const reClaimRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('claim_tr').setEmoji('1466044628506771588').setStyle(ButtonStyle.Success)
+                );
+
                 await channel.send({ 
                     embeds: [new EmbedBuilder().setColor('Red').setDescription(`**<@${user.id}> Adlı Yetkili Ticketi Sahiplenmeyi Bıraktı Ticketi Sahiplenmek İsteyen Yetkili <:zyphera_yesilraptiye:1466044628506771588> Butonuna Tıklayın**`)],
-                    components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('claim_tr').setEmoji('1466044628506771588').setStyle(ButtonStyle.Success))]
+                    components: [reClaimRow]
                 });
             }
 
-            // Kilitleme (Lock)
+            // Kilitleme ve Silme Bölümü (Confirm/Delete)
             if (customId === 'lock_tr') {
                 await interaction.reply({ 
                     embeds: [new EmbedBuilder().setTitle('Ticket Kapatılıyor').setDescription(`**<@${user.id}> Ticketi Kapatmak İstiyor Musunuz?**`).setColor('Yellow')],
