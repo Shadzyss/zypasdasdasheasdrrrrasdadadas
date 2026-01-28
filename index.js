@@ -260,4 +260,23 @@ client.on('guildMemberRemove', async (member) => {
     }
 });
 
+// 'events' klasörünün yolunu belirle
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+
+for (const file of eventFiles) {
+    const filePath = path.join(eventsPath, file);
+    const event = require(filePath);
+
+    if (event.once) {
+        // Eğer event sadece 1 kere çalışacaksa (örn: ready eventi)
+        client.once(event.name, (...args) => event.execute(...args));
+    } else {
+        // Sürekli dinlenecek eventler (örn: interactionCreate)
+        client.on(event.name, (...args) => event.execute(...args));
+    }
+}
+
+console.log(`${eventFiles.length} adet event başarıyla yüklendi.`);
+
 client.login(process.env.CLIENT_TOKEN);
