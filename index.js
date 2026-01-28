@@ -374,4 +374,107 @@ client.on('guildMemberRemove', async (member) => {
     }
 });
 
+//////// TİCKET SİSTEMİ ////////
+const ticketModel = require('./models/ticketSchema'); // Yolunu kontrol et
+const { ChannelType, PermissionsBitField } = require('discord.js');
+
+// Buton Tıklamalarını Dinleme (Özet Mantık)
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isButton()) return;
+
+    const staffRoleId = process.env.STAFF_ROLE_ID; // 1446481571807887482
+    const guild = interaction.guild;
+
+    // --- TICKET AÇMA ---
+    if (interaction.customId.startsWith('tkt_')) {
+        const categoryNames = { tkt_bilgi: 'bilgi', tkt_sikayet: 'sikayet', tkt_basvuru: 'basvuru', tkt_diger: 'diger' };
+        const categoryName = categoryNames[interaction.customId];
+
+        const ticketChannel = await guild.channels.create({
+            name: `ticket-${categoryName}-${interaction.user.username}`,
+            type: ChannelType.GuildText,
+            permissionOverwrites: [
+                { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] },
+                { id: staffRoleId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] },
+            ],
+        });
+
+        const welcomeEmbed = new EmbedBuilder()
+            .setDescription(`<@${interaction.user.id}> Ticket Açtığınız İçin Teşekkür Ederiz Ticketi Kapatmak İçin 🔒 Butonuna Basın\n\n` +
+                `\`----- Ticket Bilgileri -----\`\nTicketi Açan Kişi --> <@${interaction.user.id}>\nTicket Kategorisi --> ${categoryName}\nTicketin Açılış Tarihi --> <t:${Math.floor(Date.now() / 1000)}:F>\n\n` +
+                `<:zyphera_sagok:1464095169220448455> Ticket İle İlgilenecek Yetkili <a:zyphera_raptiye:1464095171921842290> Butonuna Tıklasın Ve Ticketi Sahiplensin`)
+            .setColor('Random');
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('claim_ticket').setEmoji('1464095171921842290').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('close_ticket_request').setEmoji('🔒').setStyle(ButtonStyle.Danger)
+        );
+
+        await ticketChannel.send({ content: `<@${interaction.user.id}> - <@&${staffRoleId}>`, embeds: [welcomeEmbed], components: [row] });
+        await interaction.reply({ content: `Ticket kanalınız açıldı: ${ticketChannel}`, ephemeral: true });
+    }
+
+    // --- SAHİPLENME (CLAIM) ---
+    if (interaction.customId === 'claim_ticket') {
+        if (!interaction.member.roles.cache.has(staffRoleId)) return interaction.reply({ content: 'Sadece yetkililer sahiplenebilir.', ephemeral: true });
+
+        // Veritabanı +1
+        await ticketModel.findOneAndUpdate({ guildId: guild.id, userId: interaction.user.id }, { $inc: { ticketCount: 1 } }, { upsert: true });
+
+        const claimEmbed = new EmbedBuilder()
+            .setTitle('Ticket Sahiplenildi')
+            .setDescription(`Ticket <@${interaction.user.id}> Tarafından Sahiplenildi. <@${interaction.user.id}> Sorunu Çözemiyorsanız Ticketı Sahipliğini Bırakmak İçin 📌 Butonuna Tıklayın`)
+            .setColor('Green');
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('unclaim_ticket').setEmoji('📌').setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId('close_ticket_request').setEmoji('🔒').setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.update({ embeds: [claimEmbed], components: [row] });
+    }
+
+    // --- BIRAKMA (UNCLAIM) ---
+    if (interaction.customId === 'unclaim_ticket') {
+        // Veritabanı -1
+        await ticketModel.findOneAndUpdate({ guildId: guild.id, userId: interaction.user.id }, { $inc: { ticketCount: -1 } });
+
+        const unclaimEmbed = new EmbedBuilder()
+            .setTitle('Ticket Sahipliği Bırakıldı')
+            .setDescription(`<@${interaction.user.id}> Tarafından Ticket Sahipliği Bırakıldı Ticketi Sahiplenmek İçin <a:zyphera_raptiye:1464095171921842290> Butonuna Tıklasın`)
+            .setColor('Red');
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('claim_ticket').setEmoji('1464095171921842290').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('close_ticket_request').setEmoji('🔒').setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.update({ embeds: [unclaimEmbed], components: [row] });
+    }
+
+    // --- KAPATMA / ONAY / SİLME ---
+    if (interaction.customId === 'close_ticket_request') {
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('confirm_close').setLabel('Onayla').setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId('cancel_close').setLabel('İptal Et').setStyle(ButtonStyle.Secondary)
+        );
+        await interaction.reply({ embeds: [new EmbedBuilder().setTitle('Ticket Kapatılıyor').setDescription('Onaylıyor musunuz?').setColor('Yellow')], components: [row] });
+    }
+
+    if (interaction.customId === 'confirm_close') {
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('reopen_ticket').setEmoji('🔓').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('delete_ticket').setEmoji('🗑️').setStyle(ButtonStyle.Danger)
+        );
+        await interaction.update({ embeds: [new EmbedBuilder().setDescription('Ticket Kapatıldı. Yeniden açabilir veya silebilirsiniz.').setColor('Yellow')], components: [row] });
+        await interaction.channel.permissionOverwrites.edit(interaction.guild.roles.everyone, { SendMessages: false });
+    }
+
+    if (interaction.customId === 'delete_ticket') {
+        await interaction.reply({ embeds: [new EmbedBuilder().setTitle('Ticket Siliniyor').setDescription('Ticket saniyeler içinde silinecek.').setColor('Random')] });
+        setTimeout(() => interaction.channel.delete(), 5000);
+    }
+});
+
 client.login(process.env.CLIENT_TOKEN);
