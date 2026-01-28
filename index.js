@@ -261,7 +261,6 @@ client.on('guildMemberRemove', async (member) => {
 });
 
 ////////// EVENTS YÜKLEME /////////
-const path = require('node:path');
 
 // Event handler: events klasöründeki her dosyayı bir event olarak yükler
 const eventsPath = path.join(__dirname, 'events');
