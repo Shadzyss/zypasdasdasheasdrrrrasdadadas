@@ -1,132 +1,160 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
-const Yetkili = require('../models/Yetkili');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
+const StaffStats = require('../models/StaffStats'); // Model yolu
 
 module.exports = {
     name: 'interactionCreate',
     async execute(interaction) {
-        if (interaction.isChatInputCommand()) {
-            const command = interaction.client.commands.get(interaction.commandName);
-            if (!command) return;
-            try { await command.execute(interaction); } catch (e) { console.error(e); }
-        }
-
         if (!interaction.isButton()) return;
 
-        const { customId, guild, user, channel, member, message } = interaction;
+        const { customId, guild, user, channel } = interaction;
         const staffRole = process.env.STAFF_TR_ROLE_ID;
-        const category = process.env.TICKET_KATEGORI;
+        const categoryId = process.env.TICKET_KATEGORI;
 
-        // --- TICKET AÇMA ---
-        if (customId.startsWith('tr_')) {
-            const types = {
-                'tr_info': { name: 'Bilgi', emoji: 'ℹ️' },
-                'tr_sikayet': { name: 'Şikayet', emoji: '⚠️' },
-                'tr_basvuru': { name: 'Başvuru', emoji: '📝' },
-                'tr_diger': { name: 'Diğer', emoji: '❓' }
-            };
-            const s = types[customId];
+        // --- TICKET OLUŞTURMA ---
+        if (['t_info', 't_sikayet', 't_basvuru', 't_diger'].includes(customId)) {
+            let label = "";
+            let emoji = "";
+            if(customId === 't_info') { label = "Bilgi"; emoji = "<:zyphera_info:1466034688903610471>"; }
+            if(customId === 't_sikayet') { label = "Şikayet"; emoji = "<:zyphera_yonetici:1464095317526839296>"; }
+            if(customId === 't_basvuru') { label = "Yetkili Başvurusu"; emoji = "<a:zyphera_parca:1464095414201352254>"; }
+            if(customId === 't_diger') { label = "Diğer"; emoji = "<a:zyphera_yukleniyor:1464095331863101514>"; }
 
             const ticketChannel = await guild.channels.create({
                 name: `ticket-${user.username}`,
                 type: ChannelType.GuildText,
-                parent: category,
+                parent: categoryId,
                 permissionOverwrites: [
                     { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                    { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                    { id: staffRole, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
-                ]
+                    { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+                    { id: staffRole, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+                ],
             });
 
-            const embed = new EmbedBuilder()
-                .setColor('Blue')
-                .setDescription(`**Ticket Açıldı!**\n\n**----- Ticket Bilgileri -----**\n👤 Ticket Sahibi --> <@${user.id}>\n⏰ Zaman --> <t:${Math.floor(Date.now()/1000)}:R>\n📂 Kategori --> ${s.emoji} ${s.name}\n📌 Ticketi Sahiplenen Yetkili --> \`Ticket Sahiplenilmedi\``);
+            const welcomeEmbed = new EmbedBuilder()
+                .setDescription(`<@${user.id}> Ticket Açtığın İçin Teşekkür Ederiz Lütfen Sorununuzu Belirtin Yetkililerimiz Birazdan Geri Dönüş Sağlayacaklar Sabrınız İçin Teşekkür Ederiz\n- Ticketi Kapatmak İçin <:zyphera_lock:1466044664346968309> Butonuna Tıklayın\n- Ticketi Sahiplenmek İçin <:zyphera_yesilraptiye:1466044628506771588> Butonuna Tıklayın\n\n\`----- Ticket Bilgileri -----\`\n<:zyphera_blurpletac:1466051421253275791> Ticket Sahibi --> <@${user.id}>\n<:zyphera_server:1466051437086773290> Ticketin Oluşturulma Zamanı --> <t:${Math.floor(Date.now() / 1000)}:R>\n<:zyphera_bell:1466051402664251524> Ticket Kategorisi --> ${emoji} ${label}\n<:zyphera_yesilraptiye:1466044628506771588> Ticketi Sahiplenen Yetkili --> \`Ticket Sahiplenilmedi\``)
+                .setColor('Random');
 
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('claim_tr').setEmoji('1466044628506771588').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('lock_tr').setEmoji('1466044664346968309').setStyle(ButtonStyle.Secondary)
+                new ButtonBuilder().setCustomId('t_lock').setEmoji('1466044664346968309').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('t_claim').setEmoji('1466044628506771588').setStyle(ButtonStyle.Secondary)
             );
 
-            const m = await ticketChannel.send({ content: `<@${user.id}> - <@&${staffRole}>`, embeds: [embed], components: [row] });
-            await m.pin();
-            return interaction.reply({ content: `Kanal: ${ticketChannel}`, ephemeral: true });
+            const msg = await ticketChannel.send({ content: `<@${user.id}> - <@&${staffRole}>`, embeds: [welcomeEmbed], components: [row] });
+            await msg.pin();
+            return interaction.reply({ content: `Ticketin oluşturuldu: ${ticketChannel}`, ephemeral: true });
         }
 
-        // --- SAHİPLENME (CLAIM) ---
-        if (customId === 'claim_tr') {
-            if (!member.roles.cache.has(staffRole)) return interaction.reply({ content: 'Yetkin yok!', ephemeral: true });
+        // --- TICKET SAHİPLENME (CLAIM) ---
+        if (customId === 't_claim') {
+            if (!interaction.member.roles.cache.has(staffRole)) return interaction.reply({ content: 'Bunu sadece yetkililer yapabilir!', ephemeral: true });
 
-            const pins = await channel.messages.fetchPinned();
-            const mainMsg = pins.find(m => m.embeds[0]?.description.includes('Ticket Bilgileri'));
-            if (!mainMsg) return interaction.reply({ content: 'Ana mesaj bulunamadı!', ephemeral: true });
+            // MongoDB Güncelleme
+            await StaffStats.findOneAndUpdate({ userId: user.id }, { $inc: { claimedTickets: 1 } }, { upsert: true });
 
-            if (mainMsg.embeds[0].description.includes('Ticketi Sahiplenen Yetkili --> <@')) {
-                return interaction.reply({ content: 'Zaten sahiplenilmiş!', ephemeral: true });
+            const mainEmbed = interaction.message.embeds[0];
+            const updatedEmbed = EmbedBuilder.from(mainEmbed).setDescription(mainEmbed.description.replace('`Ticket Sahiplenilmedi`', `<@${user.id}>`));
+            
+            await interaction.message.edit({ embeds: [updatedEmbed] });
+
+            const claimEmbed = new EmbedBuilder()
+                .setDescription(`**Ticket <@${user.id}> Tarafından Sahiplenildi Ticket Sahipliğini Bırakmak İçin 📌 Butonuna Tıklayın**`)
+                .setColor('Green');
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`t_unclaim_${user.id}`).setEmoji('📌').setStyle(ButtonStyle.Secondary)
+            );
+
+            const claimMsg = await interaction.reply({ embeds: [claimEmbed], components: [row], fetchReply: true });
+            await claimMsg.pin();
+        }
+
+        // --- SAHİPLİĞİ BIRAKMA (UNCLAIM) ---
+        if (customId.startsWith('t_unclaim_')) {
+            const claimerId = customId.split('_')[2];
+            if (user.id !== claimerId) return interaction.reply({ content: 'Bu sahipliği sadece sahiplenen yetkili bırakabilir!', ephemeral: true });
+
+            await StaffStats.findOneAndUpdate({ userId: user.id }, { $inc: { claimedTickets: -1 } });
+
+            // Sabitlenen claim mesajını bul ve kaldır (basit yöntem: son mesajı kontrol et)
+            await interaction.message.unpin();
+
+            const unclaimEmbed = new EmbedBuilder()
+                .setDescription(`**<@${user.id}> Adlı Yetkili Ticketi Sahiplenmeyi Bıraktı Ticketi Sahiplenmek İsteyen Yetkili <:zyphera_yesilraptiye:1466044628506771588> Butonuna Tıklayın**`)
+                .setColor('Red');
+
+            // İlk mesajı güncelle (Tekrar Sahiplenilmedi yap)
+            const pinnedMessages = await channel.messages.fetchPinned();
+            const firstMsg = pinnedMessages.last();
+            if(firstMsg) {
+                const resetEmbed = EmbedBuilder.from(firstMsg.embeds[0]).setDescription(firstMsg.embeds[0].description.replace(`<@${user.id}>`, '`Ticket Sahiplenilmedi`'));
+                await firstMsg.edit({ embeds: [resetEmbed] });
             }
 
-            await Yetkili.findOneAndUpdate({ yetkiliId: user.id }, { $inc: { toplamTicketSahiplenme: 1 } }, { upsert: true });
-
-            // BALYOZ YÖNTEMİ: Embed'i satır satır bölüyoruz
-            let lines = mainMsg.embeds[0].description.split('\n');
-            // Son satırı (Yetkili kısmını) hedef alıp değiştiriyoruz
-            lines = lines.map(line => line.includes('Ticketi Sahiplenen Yetkili -->') ? `📌 Ticketi Sahiplenen Yetkili --> <@${user.id}>` : line);
-
-            const disabledRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('claim_tr').setEmoji('1466044628506771588').setStyle(ButtonStyle.Success).setDisabled(true),
-                new ButtonBuilder().setCustomId('lock_tr').setEmoji('1466044664346968309').setStyle(ButtonStyle.Secondary)
-            );
-
-            await mainMsg.edit({ embeds: [EmbedBuilder.from(mainMsg.embeds[0]).setDescription(lines.join('\n'))], components: [disabledRow] });
-
-            const claimRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('unclaim_tr').setEmoji('📌').setStyle(ButtonStyle.Danger)
-            );
-
-            return interaction.reply({ 
-                embeds: [new EmbedBuilder().setColor('Green').setDescription(`**Ticket <@${user.id}> tarafından sahiplenildi.**`)], 
-                components: [claimRow] 
-            });
+            return interaction.update({ embeds: [unclaimEmbed], components: [], content: "" });
         }
 
-        // --- BIRAKMA (UNCLAIM) ---
-        if (customId === 'unclaim_tr') {
-            if (!member.roles.cache.has(staffRole)) return;
+        // --- KAPATMA (LOCK) ---
+        if (customId === 't_lock') {
+            const lockEmbed = new EmbedBuilder()
+                .setTitle('Ticket Kapatılıyor')
+                .setDescription(`**<@${user.id}> Ticketi Kapatmak İstiyor Musunuz? Kapatmak İçin "Onayla" Butonuna Tıklayın İşlemi İptal Etmek İçin "İptal Et" Butonuna Tıklayın**`)
+                .setColor('Yellow');
 
-            await Yetkili.findOneAndUpdate({ yetkiliId: user.id }, { $inc: { toplamTicketSahiplenme: -1 } });
-
-            const pins = await channel.messages.fetchPinned();
-            const mainMsg = pins.find(m => m.embeds[0]?.description.includes('Ticket Bilgileri'));
-
-            let lines = mainMsg.embeds[0].description.split('\n');
-            lines = lines.map(line => line.includes('Ticketi Sahiplenen Yetkili -->') ? `📌 Ticketi Sahiplenen Yetkili --> \`Ticket Sahiplenilmedi\`` : line);
-
-            const enabledRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('claim_tr').setEmoji('1466044628506771588').setStyle(ButtonStyle.Success).setDisabled(false),
-                new ButtonBuilder().setCustomId('lock_tr').setEmoji('1466044664346968309').setStyle(ButtonStyle.Secondary)
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('t_lock_confirm').setLabel('Onayla').setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId('t_lock_cancel').setLabel('İptal Et').setStyle(ButtonStyle.Danger)
             );
 
-            await mainMsg.edit({ embeds: [EmbedBuilder.from(mainMsg.embeds[0]).setDescription(lines.join('\n'))], components: [enabledRow] });
+            return interaction.reply({ embeds: [lockEmbed], components: [row] });
+        }
+
+        // --- ONAYLA ---
+        if (customId === 't_lock_confirm') {
+            const closedEmbed = new EmbedBuilder()
+                .setTitle('Ticket Kapatıldı')
+                .setDescription(`Ticket Kapatıldı Ticketi Geri Açmak İçin <:zyphera_unlock:1466044688908947636> Butonuna Tıklayın Ticketi Silmek İçin <:zyphera_cop:1466044646403870730> Butonuna Tıklayın`)
+                .setColor('Green');
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('t_unlock').setEmoji('1466044688908947636').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('t_delete').setEmoji('1466044646403870730').setStyle(ButtonStyle.Secondary)
+            );
+
+            // Üyenin yazmasını engelle
+            await channel.permissionOverwrites.edit(channel.name.split('-')[1], { SendMessages: false });
             
-            // Kırmızı embed ve altında YENİ SAHİPLENME BUTONU (Senin istediğin)
-            const reClaimRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('claim_tr').setEmoji('1466044628506771588').setStyle(ButtonStyle.Success)
-            );
+            return interaction.update({ embeds: [closedEmbed], components: [row] });
+        }
 
-            return interaction.update({ 
-                embeds: [new EmbedBuilder().setColor('Red').setDescription(`**<@${user.id}> sahipliği bıraktı. Sahiplenmek için butona bas!**`)], 
-                components: [reClaimRow] 
-            });
+        // --- İPTAL ET ---
+        if (customId === 't_lock_cancel') {
+            const cancelEmbed = new EmbedBuilder()
+                .setDescription(`**İşlem İptal Edildi Ticketi Kapatmak İçin <:zyphera_lock:1466044664346968309> Butonuna Tıklayın\n- Ticketi Sahiplenen Yetkili --> <@${user.id}>\n<:zyphera_sagok:1464095169220448455> Ticket Sahipliğini Bırakmak İçin 📌 Butonuna Tıklayın**`)
+                .setColor('Red');
+
+            const msg = await interaction.update({ embeds: [cancelEmbed], components: [], fetchReply: true });
+            await msg.pin();
         }
-        
-        // --- DİĞER BUTONLAR (LOCK/DELETE) ---
-        if (customId === 'lock_tr') {
-            return interaction.reply({ 
-                content: 'Emin misin?', 
-                components: [new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('confirm_lock').setLabel('Evet').setStyle(ButtonStyle.Danger),
-                    new ButtonBuilder().setCustomId('cancel').setLabel('Hayır').setStyle(ButtonStyle.Secondary)
-                )] 
-            });
+
+        // --- YENİDEN AÇ (UNLOCK) ---
+        if (customId === 't_unlock') {
+            const openEmbed = new EmbedBuilder()
+                .setTitle('Ticket Yeniden Açıldı')
+                .setDescription(`**<@${user.id}> Tarafından Ticket Yeniden Açıldı Ticketi Kapatmak İçin <:zyphera_lock:1466044664346968309> Butonuna Tıklayın\n- Ticketi Sahiplenen Yetkili --> <@${user.id}>\n<:zyphera_sagok:1464095169220448455> Ticket Sahipliğini Bırakmak İçin 📌 Butonuna Tıklayın**`)
+                .setColor('Green');
+
+            // Mesajları temizle/sabitle yönetimi
+            const pins = await channel.messages.fetchPinned();
+            pins.first()?.unpin();
+
+            const msg = await interaction.update({ embeds: [openEmbed], components: [], fetchReply: true });
+            await msg.pin();
         }
-        if (customId === 'confirm_lock') return interaction.channel.delete();
+
+        // --- SİL (DELETE) ---
+        if (customId === 't_delete') {
+            await interaction.reply({ embeds: [new EmbedBuilder().setDescription('**Ticket Saniyeler İçinde Silinecek**').setColor('Green')] });
+            setTimeout(() => channel.delete(), 5000);
+        }
     }
 };
