@@ -18,7 +18,7 @@ module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction) {
         if (!interaction.isButton()) return;
-
+        console.log(`Butona basıldı: ${interaction.customId}`);
         const { customId, guild, user, member } = interaction;
         const staffRoleId = process.env.STAFF_TR_ROLE_ID;
         const ticketCategory = process.env.TICKET_KATEGORI;
