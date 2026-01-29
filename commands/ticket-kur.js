@@ -3,13 +3,13 @@ const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, Butt
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ticket-tr')
-        .setDescription('Zyphera ticket panelini sadece bot sahibi kurabilir.'),
+        .setDescription('Ticket Paneli Kurar'),
     async execute(interaction) {
         
         // --- SAHİP KONTROLÜ ---
         if (interaction.user.id !== process.env.OWNER_ID) {
             return interaction.reply({ 
-                content: '❌ Bu komutu sadece bot sahibi kullanabilir!', 
+                content: '❌ Bu Komutu Sadece Bot Sahibi Kullanabilir!', 
                 ephemeral: true 
             });
         }
@@ -18,10 +18,10 @@ module.exports = {
             .setTitle('Zyphera Destek Sistemi')
             .setDescription('Yardıma ihtiyacın olan konuyu aşağıdaki butonlardan seçerek bir talep oluşturabilirsin.')
             .addFields(
-                { name: 'ℹ️ Bilgi Almak İçin', value: 'Bilgi almak için ticket açar.', inline: true },
-                { name: '🛡️ Şikayet İçin', value: 'Şikayet talebi oluşturur.', inline: true },
-                { name: '🧩 Yetkili Başvurusu', value: 'Ekibimize katılmak için başvuru açar.', inline: true },
-                { name: '⏳ Diğer Destek', value: 'Genel konular için destek talebi.', inline: true }
+                { name: '<:zyphera_info:1466034688903610471> Bilgi Almak İçin', value: 'Herhangi Bir Konu Hakkında Bilgi Almak İçin <:zyphera_info:1466034688903610471> Butonuna Tıklayın', inline: true },
+                { name: '<:zyphera_kalkan:1466034432183111761> Şikayet İçin', value: '<:zyphera_kalkan:1466034432183111761> Herhangi Bir Şeyden Ya Da Bir Kişiden Şikayetçi Olmak İçin <:zyphera_kalkan:1466034432183111761> Butonuna Tıklayın', inline: true },
+                { name: '<a:zyphera_parca:1464095414201352254> Yetkili Başvurusu', value: 'Yetkili Başvurusu İçin <a:zyphera_parca:1464095414201352254> Butonuna Tıklayın', inline: true },
+                { name: '<a:zyphera_yukleniyor:1464095331863101514> Diğer Destek', value: 'Diğer Konular İçin Hakkında Bilgi Almak Destek Almak İçin <a:zyphera_yukleniyor:1464095331863101514> Butonuna Tıklayın', inline: true }
             )
             .setColor('Blurple')
             .setFooter({ text: 'Zyphera Ticket Sistemi' });

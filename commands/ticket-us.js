@@ -3,12 +3,12 @@ const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, Butt
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ticket-us')
-        .setDescription('Only the bot owner can setup the English ticket panel.'),
+        .setDescription('Ticket Panel Kur'),
     async execute(interaction) {
         
         if (interaction.user.id !== process.env.OWNER_ID) {
             return interaction.reply({ 
-                content: '❌ Only the bot owner can use this command!', 
+                content: '❌ Only The Bot Owner Can Use This Command!', 
                 ephemeral: true 
             });
         }
@@ -17,10 +17,10 @@ module.exports = {
             .setTitle('Zyphera Support System')
             .setDescription('You can create a request by selecting the topic you need help with from the buttons below.')
             .addFields(
-                { name: 'ℹ️ For Information', value: 'Open a ticket to get information.', inline: true },
-                { name: '🛡️ For Complaint', value: 'Create a complaint request.', inline: true },
-                { name: '🧩 Staff Application', value: 'Apply to join our team.', inline: true },
-                { name: '⏳ Other Support', value: 'Support request for general topics.', inline: true }
+                { name: '<:zyphera_info:1466034688903610471> For Information', value: 'Click On The <:zyphera_info:1466034688903610471> Button For Information', inline: true },
+                { name: '<:zyphera_kalkan:1466034432183111761> For Complaint', value: 'Click On The <:zyphera_kalkan:1466034432183111761> Button To Report a Complaint', inline: true },
+                { name: '<a:zyphera_parca:1464095414201352254> Staff Application', value: 'Click On The <a:zyphera_parca:1464095414201352254> Button To Apply For Staff', inline: true },
+                { name: '<a:zyphera_yukleniyor:1464095331863101514> Other Support', value: 'Click On The <a:zyphera_yukleniyor:1464095331863101514> Button For Other Support', inline: true }
             )
             .setColor('Blurple')
             .setFooter({ text: 'Zyphera Ticket System' });
@@ -48,7 +48,7 @@ module.exports = {
                 .setStyle(ButtonStyle.Secondary)
         );
 
-        await interaction.reply({ content: '✅ Ticket panel is being set up...', ephemeral: true });
+        await interaction.reply({ content: '✅ Ticket Panel Is Being Set Up...', ephemeral: true });
         await interaction.channel.send({ embeds: [embed], components: [buttons] });
     },
 };

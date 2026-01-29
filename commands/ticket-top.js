@@ -4,7 +4,7 @@ const { Staff } = require('../models/ticketSchema');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ticket-top')
-        .setDescription('Shows the staff leaderboard for claimed tickets.'),
+        .setDescription('En Çok Ticket Sahiplenen Yetkilileri Listeler'),
     async execute(interaction) {
         // Rolleri .env'den çekiyoruz
         const ROLE_TR = process.env.ROLE_ID_TURKISH;
@@ -25,12 +25,12 @@ module.exports = {
         const translations = {
             TR: {
                 title: 'En Çok Ticket Sahiplenen Yetkililer',
-                noData: 'Henüz hiç ticket sahiplenilmemiş.',
+                noData: '**Henüz Hiç Ticket Sahiplenilmemiş.**',
                 footer: 'Zyphera İstatistik Sistemi'
             },
             EN: {
                 title: 'Staff Leaderboard (Claimed Tickets)',
-                noData: 'No tickets have been claimed yet.',
+                noData: '**No Tickets Have Been Claimed Yet.**',
                 footer: 'Zyphera Statistics System'
             }
         };

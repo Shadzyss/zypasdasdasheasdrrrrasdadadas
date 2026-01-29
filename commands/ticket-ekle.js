@@ -4,7 +4,7 @@ const { Staff } = require('../models/ticketSchema');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ticket-ekle')
-        .setDescription('Yetkiliye ticket puanı ekler / Adds staff ticket points.')
+        .setDescription('Yetkiliye Ticket Sahiplenme Sayısı Ekler.')
         .addUserOption(opt => opt.setName('kullanıcı').setDescription('Yetkili / Staff').setRequired(true))
         .addIntegerOption(opt => opt.setName('sayı').setDescription('Miktar / Amount').setRequired(true)),
     async execute(interaction) {
@@ -16,14 +16,14 @@ module.exports = {
         };
 
         if (!interaction.member.roles.cache.has(process.env.YETKILI_SORUMLUSU_ROL_ID)) {
-            return sendError(isUs ? '❌ No permission!' : '❌ Bu komutu kullanmak için yetkin yok!');
+            return sendError(isUs ? '❌ No Permission!' : '❌ Bu Komutu Kullanmak İçin Yetkin Yok!');
         }
 
         const user = interaction.options.getUser('kullanıcı');
         const count = interaction.options.getInteger('sayı');
 
         if (user.bot) {
-            return sendError(isUs ? '❌ You cannot add points to bots!' : '❌ Botlara puan ekleyemezsin!');
+            return sendError(isUs ? '❌ You Cannot Add Points To Bots!' : '❌ Botlara Puan Ekleyemezsin!');
         }
 
         await Staff.findOneAndUpdate({ userID: user.id }, { $inc: { claimCount: count } }, { upsert: true });
@@ -31,7 +31,7 @@ module.exports = {
         if (isUs) {
             const usEmbed = new EmbedBuilder()
                 .setTitle('Ticket Claim Count Added')
-                .setDescription(`**${interaction.user} Successfully added \`${count}\` points to ${user}**`)
+                .setDescription(`**${interaction.user} Successfully Added \`${count}\` Points To ${user}**`)
                 .setColor('Green');
             return interaction.reply({ embeds: [usEmbed] });
         }

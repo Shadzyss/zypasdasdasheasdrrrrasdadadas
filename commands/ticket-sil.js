@@ -4,7 +4,7 @@ const { Staff } = require('../models/ticketSchema');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ticket-sil')
-        .setDescription('Yetkiliden ticket puanı siler / Deletes staff ticket points.')
+        .setDescription('Yetkiliden Ticket Sahiplenme Sayısını Siler')
         .addUserOption(opt => opt.setName('kullanıcı').setDescription('Yetkili / Staff').setRequired(true))
         .addIntegerOption(opt => opt.setName('sayı').setDescription('Miktar / Amount').setRequired(true)),
     async execute(interaction) {
@@ -18,7 +18,7 @@ module.exports = {
 
         // Yetki Kontrolü
         if (!interaction.member.roles.cache.has(process.env.YETKILI_SORUMLUSU_ROL_ID)) {
-            return sendError(isUs ? '❌ No permission!' : '❌ Bu komutu kullanmak için yetkin yok!');
+            return sendError(isUs ? '❌ No Permission!' : '❌ Bu Komutu Kullanmak İçin Yetkin Yok!');
         }
 
         const user = interaction.options.getUser('kullanıcı');
@@ -26,7 +26,7 @@ module.exports = {
 
         // Bot Kontrolü
         if (user.bot) {
-            return sendError(isUs ? '❌ You cannot perform this action on bots!' : '❌ Botlar üzerinde bu işlemi yapamazsın!');
+            return sendError(isUs ? '❌ You Cannot Perform This Action On Bots!' : '❌ Botlar Üzerinde Bu İşlemi Yapamazsın!');
         }
 
         const staffData = await Staff.findOne({ userID: user.id });
@@ -34,7 +34,7 @@ module.exports = {
 
         // 0 Puan Kontrolü
         if (currentPoints <= 0) {
-            return sendError(isUs ? `❌ ${user.username} already has 0 points!` : `❌ ${user.username} adlı kişinin puanı zaten 0!`);
+            return sendError(isUs ? `❌ ${user.username} Already Has 0 Points!` : `❌ ${user.username} Adlı Kişinin Puanı Zaten 0!`);
         }
 
         const finalCount = count > currentPoints ? currentPoints : count;
@@ -44,7 +44,7 @@ module.exports = {
         if (isUs) {
             const usEmbed = new EmbedBuilder()
                 .setTitle('Ticket Claim Count Deleted')
-                .setDescription(`**${interaction.user} Successfully deleted \`${finalCount}\` points from ${user}**`)
+                .setDescription(`**${interaction.user} Successfully Deleted \`${finalCount}\` Points From ${user}**`)
                 .setColor('Green');
             return interaction.reply({ embeds: [usEmbed] });
         } 
