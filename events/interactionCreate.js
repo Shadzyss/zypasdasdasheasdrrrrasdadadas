@@ -29,7 +29,7 @@ module.exports = {
             const timestamp = Math.floor(Date.now() / 1000);
 
             const channel = await interaction.guild.channels.create({
-                name: `ticket-us-${interaction.user.username}`,
+                name: `ticket-${interaction.user.username}`,
                 type: ChannelType.GuildText,
                 parent: CAT_US,
                 permissionOverwrites: [
@@ -149,7 +149,7 @@ module.exports = {
             const timestamp = Math.floor(Date.now() / 1000);
 
             const channel = await interaction.guild.channels.create({
-                name: `ticket-tr-${interaction.user.username}`,
+                name: `ticket-${interaction.user.username}`,
                 type: ChannelType.GuildText,
                 parent: CAT_TR, // TÜRKÇE KATEGORİ
                 permissionOverwrites: [
