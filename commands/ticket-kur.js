@@ -1,10 +1,15 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
-    name: 'ticket-kur', // Slash command veya prefix komutu olarak ayarlayabilirsin
-    run: async (client, interaction) => {
-        // Sadece yöneticiler kullanabilsin
-        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+    // Discord v14 Slash Command Yapısı (data zorunludur)
+    data: new SlashCommandBuilder()
+        .setName('ticket-kur')
+        .setDescription('Ticket sisteminin panelini kanala kurar.')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator), // Sadece Yönetici yetkisi olanlar görebilir
+
+    async execute(interaction) {
+        // İsimlendirmeyi 'interaction' olarak alıyoruz
+        const client = interaction.client;
 
         const embed = new EmbedBuilder()
             .setTitle('Destek Merkezi')
@@ -35,7 +40,8 @@ module.exports = {
                 .setStyle(ButtonStyle.Secondary)
         );
 
-        await interaction.reply({ content: 'Ticket paneli oluşturuldu!', ephemeral: true });
+        // Mesajı gönder
+        await interaction.reply({ content: 'Ticket paneli başarıyla oluşturuldu!', ephemeral: true });
         await interaction.channel.send({ embeds: [embed], components: [row] });
     }
 };
