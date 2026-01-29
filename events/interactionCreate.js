@@ -9,7 +9,7 @@ module.exports = {
 
         if (!interaction.isButton()) return;
 
-        // --- 1. TICKET AÇMA MANTIĞI ---
+        // --- 1. TICKET AÇMA VE SABİTLEME ---
         const ticketConfig = {
             'ticket_info': { label: 'Bilgi', emoji: '<:zyphera_info:1466034688903610471>' },
             'ticket_sikayet': { label: 'Şikayet', emoji: '<:zyphera_kalkan:1466034432183111761>' },
@@ -43,26 +43,47 @@ module.exports = {
 
             const buttons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId('claim').setEmoji('<:zyphera_yesilraptiye:1466044628506771588>').setLabel('Sahiplen').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('close').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Kapat').setStyle(ButtonStyle.Secondary)
+                new ButtonBuilder().setCustomId('close_request').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Kapat').setStyle(ButtonStyle.Secondary)
             );
 
-            await channel.send({ 
+            const sentMessage = await channel.send({ 
                 content: `${interaction.user} - <@&${STAFF_ROLE}>`, 
                 embeds: [ticketEmbed], 
                 components: [buttons] 
             });
 
+            // MESAJI SABİTLEME
+            await sentMessage.pin();
+
             return interaction.editReply({ content: `Ticket kanalın oluşturuldu: ${channel}` });
         }
 
-        // --- 2. SAHİPLENME (CLAIM) ---
+        // --- 2. KAPATMA ONAY EMBEDİ (SARI) ---
+        if (interaction.customId === 'close_request') {
+            const closeConfirmEmbed = new EmbedBuilder()
+                .setTitle('Ticket Kapatılıyor')
+                .setDescription(`**${interaction.user} Ticketi Kapatmak İstiyor Musun? Kapatmak İçin "Onayla" Butonuna Tıklayın. Ticketi Kapatmak İstemiyorsan "İptal Et" Butonuna Tıklayın.**`)
+                .setColor('Yellow');
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('delete').setLabel('Onayla').setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId('cancel_close').setLabel('İptal Et').setStyle(ButtonStyle.Secondary)
+            );
+
+            await interaction.reply({ embeds: [closeConfirmEmbed], components: [row] });
+        }
+
+        // --- 3. İPTAL ET BUTONU ---
+        if (interaction.customId === 'cancel_close') {
+            await interaction.message.delete(); // Onay mesajını siler
+        }
+
+        // --- 4. SAHİPLENME (CLAIM) ---
         if (interaction.customId === 'claim') {
-            if (!interaction.member.roles.cache.has(STAFF_ROLE)) {
-                return interaction.reply({ content: 'Bu işlemi sadece destek ekibi yapabilir!', ephemeral: true });
-            }
+            if (!interaction.member.roles.cache.has(STAFF_ROLE)) return interaction.reply({ content: 'Yetkin yok!', ephemeral: true });
 
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            if (ticketData?.claimerID) return interaction.reply({ content: 'Bu ticket zaten sahiplenilmiş!', ephemeral: true });
+            if (ticketData?.claimerID) return interaction.reply({ content: 'Zaten sahiplenilmiş!', ephemeral: true });
 
             await Ticket.findOneAndUpdate({ channelID: interaction.channel.id }, { claimerID: interaction.user.id });
             await Staff.findOneAndUpdate({ userID: interaction.user.id }, { $inc: { claimCount: 1 } }, { upsert: true });
@@ -74,18 +95,16 @@ module.exports = {
 
             const buttons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId('unclaim').setEmoji('📌').setLabel('Sahipliği Bırak').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('close').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Kapat').setStyle(ButtonStyle.Secondary)
+                new ButtonBuilder().setCustomId('close_request').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Kapat').setStyle(ButtonStyle.Secondary)
             );
 
             await interaction.update({ embeds: [claimedEmbed], components: [buttons] });
         }
 
-        // --- 3. SAHİPLİĞİ BIRAKMA (UNCLAIM) ---
+        // --- 5. SAHİPLİĞİ BIRAKMA (UNCLAIM) ---
         if (interaction.customId === 'unclaim') {
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            if (interaction.user.id !== ticketData?.claimerID) {
-                return interaction.reply({ content: 'Sadece sahiplenen kişi bırakabilir!', ephemeral: true });
-            }
+            if (interaction.user.id !== ticketData?.claimerID) return interaction.reply({ content: 'Sadece sahiplenen bırakabilir!', ephemeral: true });
 
             await Ticket.findOneAndUpdate({ channelID: interaction.channel.id }, { claimerID: null });
             await Staff.findOneAndUpdate({ userID: interaction.user.id }, { $inc: { claimCount: -1 } });
@@ -97,24 +116,16 @@ module.exports = {
 
             const buttons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId('claim').setEmoji('<:zyphera_yesilraptiye:1466044628506771588>').setLabel('Sahiplen').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('close').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Kapat').setStyle(ButtonStyle.Secondary)
+                new ButtonBuilder().setCustomId('close_request').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Kapat').setStyle(ButtonStyle.Secondary)
             );
 
             await interaction.update({ embeds: [unclaimedEmbed], components: [buttons] });
         }
 
-        // --- 4. KAPATMA VE SİLME ---
-        if (interaction.customId === 'close') {
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('delete').setEmoji('<:zyphera_cop:1466044646403870730>').setLabel('Kanalı Sil').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('reopen').setEmoji('<:zyphera_unlock:1466044688908947636>').setLabel('Geri Aç').setStyle(ButtonStyle.Success)
-            );
-            await interaction.reply({ content: 'Ticket kapatıldı.', components: [row] });
-        }
-
+        // --- 6. KANALI SİLME ---
         if (interaction.customId === 'delete') {
             await Ticket.deleteOne({ channelID: interaction.channel.id });
-            await interaction.channel.delete();
+            await interaction.channel.delete().catch(() => {});
         }
     }
 };
