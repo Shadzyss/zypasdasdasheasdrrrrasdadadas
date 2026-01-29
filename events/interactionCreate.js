@@ -63,11 +63,19 @@ module.exports = {
             await interaction.reply({ embeds: [yellowEmbed], components: [row] });
         }
 
-        // --- 3. ONAYLA (KAPATMA İŞLEMİ) ---
+        // --- 3. İPTAL ET BUTONU (KIRMIZI + 2 SANİYE SONRA SİLİNME) ---
+        if (interaction.customId === 'cancel_close') {
+            const cancelEmbed = new EmbedBuilder()
+                .setDescription(`**İşlem ${interaction.user} Tarafından İptal Edildi**`)
+                .setColor('Red');
+
+            await interaction.update({ embeds: [cancelEmbed], components: [] });
+            setTimeout(() => interaction.deleteReply().catch(() => {}), 2000);
+        }
+
+        // --- 4. ONAYLA (KAPATMA) ---
         if (interaction.customId === 'confirm_close') {
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            
-            // Ticket sahibinin kanalı görmesini engelle
             await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: false });
 
             const greenCloseEmbed = new EmbedBuilder()
@@ -83,11 +91,9 @@ module.exports = {
             await interaction.update({ embeds: [greenCloseEmbed], components: [row] });
         }
 
-        // --- 4. GERİ AÇ BUTONU ---
+        // --- 5. GERİ AÇ BUTONU (2 SANİYE SONRA SİLİNME) ---
         if (interaction.customId === 'reopen_ticket') {
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            
-            // Ticket sahibine kanalı tekrar göster
             await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: true, SendMessages: true });
 
             const reopenEmbed = new EmbedBuilder()
@@ -95,21 +101,25 @@ module.exports = {
                 .setDescription(`**Ticket ${interaction.user} Tarafından Geri Açıldı Ticketi Kapatmak İçin Sabitlenenlerdeki Embede Gidip <:zyphera_lock:1466044664346968309> Butonuna Tıklayın**`)
                 .setColor('Green');
 
-            await interaction.message.delete(); // Kapatıldı embedini sil
-            await interaction.channel.send({ content: `<@${ticketData.ownerID}>`, embeds: [reopenEmbed] });
+            await interaction.message.delete(); 
+            const sentReopen = await interaction.channel.send({ content: `<@${ticketData.ownerID}>`, embeds: [reopenEmbed] });
+            setTimeout(() => sentReopen.delete().catch(() => {}), 2000);
         }
 
-        // --- 5. SİL / İPTAL / SAHİPLENME (ÖNCEKİLERLE AYNI) ---
+        // --- 6. SİL BUTONU ---
         if (interaction.customId === 'final_delete') {
-            await interaction.reply('Kanal 5 saniye içinde siliniyor...');
+            const deleteEmbed = new EmbedBuilder()
+                .setTitle('Ticket Siliniyor')
+                .setDescription('**Ticket 5 Saniye İçinde Silinecek**')
+                .setColor('Green');
+
+            await interaction.update({ embeds: [deleteEmbed], components: [] });
+            
             await Ticket.deleteOne({ channelID: interaction.channel.id });
             setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
         }
 
-        if (interaction.customId === 'cancel_close') {
-            await interaction.message.delete();
-        }
-
+        // --- SAHİPLENME (CLAIM) ---
         if (interaction.customId === 'claim') {
             if (!interaction.member.roles.cache.has(STAFF_ROLE)) return interaction.reply({ content: 'Yetkin yok!', ephemeral: true });
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
@@ -128,6 +138,7 @@ module.exports = {
             await interaction.update({ embeds: [claimedEmbed], components: [buttons] });
         }
 
+        // --- SAHİPLİĞİ BIRAKMA (UNCLAIM) ---
         if (interaction.customId === 'unclaim') {
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
             if (interaction.user.id !== ticketData?.claimerID) return interaction.reply({ content: 'Sadece sahiplenen bırakabilir!', ephemeral: true });
