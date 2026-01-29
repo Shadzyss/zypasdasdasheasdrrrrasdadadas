@@ -19,7 +19,7 @@ module.exports = {
             .setDescription('Yardıma ihtiyacın olan konuyu aşağıdaki butonlardan seçerek bir talep oluşturabilirsin.')
             .addFields(
                 { name: '<:zyphera_info:1466034688903610471> Bilgi Almak İçin', value: 'Herhangi Bir Konu Hakkında Bilgi Almak İçin <:zyphera_info:1466034688903610471> Butonuna Tıklayın', inline: true },
-                { name: '<:zyphera_kalkan:1466034432183111761> Şikayet İçin', value: '<:zyphera_kalkan:1466034432183111761> Herhangi Bir Şeyden Ya Da Bir Kişiden Şikayetçi Olmak İçin <:zyphera_kalkan:1466034432183111761> Butonuna Tıklayın', inline: true },
+                { name: '<:zyphera_kalkan:1466034432183111761> Şikayet İçin', value: 'Herhangi Bir Şeyden Ya Da Bir Kişiden Şikayetçi Olmak İçin <:zyphera_kalkan:1466034432183111761> Butonuna Tıklayın', inline: true },
                 { name: '<a:zyphera_parca:1464095414201352254> Yetkili Başvurusu', value: 'Yetkili Başvurusu İçin <a:zyphera_parca:1464095414201352254> Butonuna Tıklayın', inline: true },
                 { name: '<a:zyphera_yukleniyor:1464095331863101514> Diğer Destek', value: 'Diğer Konular İçin Hakkında Bilgi Almak Destek Almak İçin <a:zyphera_yukleniyor:1464095331863101514> Butonuna Tıklayın', inline: true }
             )
