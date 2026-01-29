@@ -9,8 +9,8 @@ module.exports = {
         // --- DEĞİŞKENLER ---
         const STAFF_TR = process.env.STAFF_TR_ROLE_ID;
         const CAT_TR = process.env.TICKET_KATEGORI;
-        const STAFF_US = process.env.STAFF_US_ROLE_ID; // US Yetkili Rolü
-        const CAT_US = process.env.TICKET_KATEGORI_US; // US Kategori
+        const STAFF_US = process.env.STAFF_US_ROLE_ID; 
+        const CAT_US = process.env.TICKET_KATEGORI_US; 
 
         // ==========================================
         //        🇺🇸 ENGLISH SYSTEM (US)
@@ -22,6 +22,7 @@ module.exports = {
             'ticket_destek_us': { label: 'Other Support', emoji: '<a:zyphera_yukleniyor:1464095331863101514>' }
         };
 
+        // US Butonlarından birine basıldıysa
         if (ticketConfigUS[interaction.customId]) {
             await interaction.deferReply({ ephemeral: true });
             const selected = ticketConfigUS[interaction.customId];
@@ -30,7 +31,7 @@ module.exports = {
             const channel = await interaction.guild.channels.create({
                 name: `ticket-${interaction.user.username}`,
                 type: ChannelType.GuildText,
-                parent: CAT_US,
+                parent: CAT_US, // ARTIK DOĞRU KATEGORİYE AÇACAK
                 permissionOverwrites: [
                     { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
                     { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
@@ -54,83 +55,87 @@ module.exports = {
             return interaction.editReply(`Ticket opened: ${channel}`);
         }
 
-        if (interaction.customId === 'claim_us') {
-            if (!interaction.member.roles.cache.has(STAFF_US)) return interaction.reply({ content: 'No permission!', ephemeral: true });
-            const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            if (ticketData?.claimerID) return interaction.reply({ content: 'Already claimed!', ephemeral: true });
-            await Ticket.findOneAndUpdate({ channelID: interaction.channel.id }, { claimerID: interaction.user.id });
-            await Staff.findOneAndUpdate({ userID: interaction.user.id }, { $inc: { claimCount: 1 } }, { upsert: true });
+        // US Sisteminin diğer butonları
+        if (interaction.customId.endsWith('_us')) {
+            if (interaction.customId === 'claim_us') {
+                if (!interaction.member.roles.cache.has(STAFF_US)) return interaction.reply({ content: 'No permission!', ephemeral: true });
+                const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
+                if (ticketData?.claimerID) return interaction.reply({ content: 'Already claimed!', ephemeral: true });
+                await Ticket.findOneAndUpdate({ channelID: interaction.channel.id }, { claimerID: interaction.user.id });
+                await Staff.findOneAndUpdate({ userID: interaction.user.id }, { $inc: { claimCount: 1 } }, { upsert: true });
 
-            const oldEmbed = interaction.message.embeds[0];
-            const claimedEmbed = EmbedBuilder.from(oldEmbed).setDescription(oldEmbed.description.replace('`Unclaimed`', `Claimed ( ${interaction.user} Staff )`));
-            const buttons = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('unclaim_us').setEmoji('📌').setLabel('Unclaim').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('close_request_us').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Close').setStyle(ButtonStyle.Secondary)
-            );
-            await interaction.update({ embeds: [claimedEmbed], components: [buttons] });
-            const claimNotify = new EmbedBuilder().setTitle('Ticket Claimed').setDescription(`**Claimed by ${interaction.user}.**`).setColor('Green');
-            const notifyMsg = await interaction.channel.send({ embeds: [claimNotify] });
-            setTimeout(() => notifyMsg.delete().catch(() => {}), 3000);
-        }
+                const oldEmbed = interaction.message.embeds[0];
+                const claimedEmbed = EmbedBuilder.from(oldEmbed).setDescription(oldEmbed.description.replace('`Unclaimed`', `Claimed ( ${interaction.user} Staff )`));
+                const buttons = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('unclaim_us').setEmoji('📌').setLabel('Unclaim').setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder().setCustomId('close_request_us').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Close').setStyle(ButtonStyle.Secondary)
+                );
+                await interaction.update({ embeds: [claimedEmbed], components: [buttons] });
+                const claimNotify = new EmbedBuilder().setTitle('Ticket Claimed').setDescription(`**Claimed by ${interaction.user}.**`).setColor('Green');
+                const notifyMsg = await interaction.channel.send({ embeds: [claimNotify] });
+                setTimeout(() => notifyMsg.delete().catch(() => {}), 3000);
+            }
 
-        if (interaction.customId === 'unclaim_us') {
-            const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            if (interaction.user.id !== ticketData?.claimerID) return interaction.reply({ content: 'Only claimer!', ephemeral: true });
-            await Ticket.findOneAndUpdate({ channelID: interaction.channel.id }, { claimerID: null });
-            await Staff.findOneAndUpdate({ userID: interaction.user.id }, { $inc: { claimCount: -1 } });
-            const oldEmbed = interaction.message.embeds[0];
-            const unclaimedEmbed = EmbedBuilder.from(oldEmbed).setDescription(oldEmbed.description.replace(/Claimed \( <@!?\d+> Staff \)/, '`Unclaimed`'));
-            const buttons = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('claim_us').setEmoji('<:zyphera_yesilraptiye:1466044628506771588>').setLabel('Claim').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('close_request_us').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Close').setStyle(ButtonStyle.Secondary)
-            );
-            await interaction.update({ embeds: [unclaimedEmbed], components: [buttons] });
-        }
+            if (interaction.customId === 'unclaim_us') {
+                const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
+                if (interaction.user.id !== ticketData?.claimerID) return interaction.reply({ content: 'Only claimer!', ephemeral: true });
+                await Ticket.findOneAndUpdate({ channelID: interaction.channel.id }, { claimerID: null });
+                await Staff.findOneAndUpdate({ userID: interaction.user.id }, { $inc: { claimCount: -1 } });
+                const oldEmbed = interaction.message.embeds[0];
+                const unclaimedEmbed = EmbedBuilder.from(oldEmbed).setDescription(oldEmbed.description.replace(/Claimed \( <@!?\d+> Staff \)/, '`Unclaimed`'));
+                const buttons = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('claim_us').setEmoji('<:zyphera_yesilraptiye:1466044628506771588>').setLabel('Claim').setStyle(ButtonStyle.Success),
+                    new ButtonBuilder().setCustomId('close_request_us').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Close').setStyle(ButtonStyle.Secondary)
+                );
+                await interaction.update({ embeds: [unclaimedEmbed], components: [buttons] });
+            }
 
-        if (interaction.customId === 'close_request_us') {
-            const yellowEmbed = new EmbedBuilder().setTitle('Closing Ticket').setDescription(`**${interaction.user}, want to close?**`).setColor('Yellow');
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('confirm_close_us').setLabel('Confirm').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('cancel_close_us').setLabel('Cancel').setStyle(ButtonStyle.Secondary)
-            );
-            await interaction.reply({ embeds: [yellowEmbed], components: [row] });
-        }
+            if (interaction.customId === 'close_request_us') {
+                const yellowEmbed = new EmbedBuilder().setTitle('Closing Ticket').setDescription(`**${interaction.user}, want to close?**`).setColor('Yellow');
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('confirm_close_us').setLabel('Confirm').setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder().setCustomId('cancel_close_us').setLabel('Cancel').setStyle(ButtonStyle.Secondary)
+                );
+                return interaction.reply({ embeds: [yellowEmbed], components: [row] });
+            }
 
-        if (interaction.customId === 'cancel_close_us') {
-            const cancelEmbed = new EmbedBuilder().setDescription(`**Cancelled by ${interaction.user}**`).setColor('Red');
-            await interaction.update({ embeds: [cancelEmbed], components: [] });
-            setTimeout(() => interaction.deleteReply().catch(() => {}), 2000);
-        }
+            if (interaction.customId === 'cancel_close_us') {
+                const cancelEmbed = new EmbedBuilder().setDescription(`**Cancelled by ${interaction.user}**`).setColor('Red');
+                await interaction.update({ embeds: [cancelEmbed], components: [] });
+                return setTimeout(() => interaction.deleteReply().catch(() => {}), 2000);
+            }
 
-        if (interaction.customId === 'confirm_close_us') {
-            const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: false });
-            const greenCloseEmbed = new EmbedBuilder().setTitle('Ticket Closed').setDescription(`**Closed by ${interaction.user}.**`).setColor('Green');
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('reopen_ticket_us').setEmoji('<:zyphera_unlock:1466044688908947636>').setLabel('Reopen').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('final_delete_us').setEmoji('<:zyphera_cop:1466044646403870730>').setLabel('Delete').setStyle(ButtonStyle.Danger)
-            );
-            await interaction.update({ embeds: [greenCloseEmbed], components: [row] });
-        }
+            if (interaction.customId === 'confirm_close_us') {
+                const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
+                await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: false });
+                const greenCloseEmbed = new EmbedBuilder().setTitle('Ticket Closed').setDescription(`**Closed by ${interaction.user}.**`).setColor('Green');
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('reopen_ticket_us').setEmoji('<:zyphera_unlock:1466044688908947636>').setLabel('Reopen').setStyle(ButtonStyle.Success),
+                    new ButtonBuilder().setCustomId('final_delete_us').setEmoji('<:zyphera_cop:1466044646403870730>').setLabel('Delete').setStyle(ButtonStyle.Danger)
+                );
+                return interaction.update({ embeds: [greenCloseEmbed], components: [row] });
+            }
 
-        if (interaction.customId === 'reopen_ticket_us') {
-            const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: true, SendMessages: true });
-            await interaction.message.delete();
-            const sentReopen = await interaction.channel.send({ content: `<@${ticketData.ownerID}>`, embeds: [new EmbedBuilder().setTitle('Reopened').setColor('Green')] });
-            setTimeout(() => sentReopen.delete().catch(() => {}), 2000);
-        }
+            if (interaction.customId === 'reopen_ticket_us') {
+                const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
+                await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: true, SendMessages: true });
+                await interaction.message.delete();
+                const sentReopen = await interaction.channel.send({ content: `<@${ticketData.ownerID}>`, embeds: [new EmbedBuilder().setTitle('Reopened').setColor('Green')] });
+                return setTimeout(() => sentReopen.delete().catch(() => {}), 2000);
+            }
 
-        if (interaction.customId === 'final_delete_us') {
-            await interaction.update({ embeds: [new EmbedBuilder().setTitle('Deleting').setDescription('**5 seconds...**').setColor('Green')], components: [] });
-            await Ticket.deleteOne({ channelID: interaction.channel.id });
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
+            if (interaction.customId === 'final_delete_us') {
+                await interaction.update({ embeds: [new EmbedBuilder().setTitle('Deleting').setDescription('**5 seconds...**').setColor('Green')], components: [] });
+                await Ticket.deleteOne({ channelID: interaction.channel.id });
+                return setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
+            }
+            
+            return; // US işlemi bittiyse burada dur, TR koduna girme
         }
 
         // ==========================================
         //        🇹🇷 TÜRKÇE SİSTEM (TR)
         // ==========================================
-        // BURASI SENİN ATTIĞIN 265 SATIRLIK KODUN BİREBİR KOPYASIDIR
         const ticketConfig = {
             'ticket_info': { label: 'Bilgi', emoji: '<:zyphera_info:1466034688903610471>' },
             'ticket_sikayet': { label: 'Şikayet', emoji: '<:zyphera_kalkan:1466034432183111761>' },
@@ -146,7 +151,7 @@ module.exports = {
             const channel = await interaction.guild.channels.create({
                 name: `ticket-${interaction.user.username}`,
                 type: ChannelType.GuildText,
-                parent: CAT_TR,
+                parent: CAT_TR, // TÜRKÇE KATEGORİ
                 permissionOverwrites: [
                     { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
                     { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
