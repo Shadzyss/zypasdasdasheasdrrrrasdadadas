@@ -261,25 +261,4 @@ client.on('guildMemberRemove', async (member) => {
     }
 });
 
-// --- EVENT HANDLER (OLAY YÜKLEYİCİ) ---
-const eventsPath = path.join(__dirname, 'events');
-// events klasörünü kontrol et, yoksa hata vermesin diye try-catch veya kontrol eklenebilir ama klasörün olduğunu varsayıyoruz.
-if (fs.existsSync(eventsPath)) {
-    const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
-    for (const file of eventFiles) {
-        const filePath = path.join(eventsPath, file);
-        const event = require(filePath);
-        
-        if (event.once) {
-            client.once(event.name, (...args) => event.execute(...args));
-        } else {
-            client.on(event.name, (...args) => event.execute(...args));
-        }
-    }
-    console.log(`${eventFiles.length} adet event başarıyla yüklendi.`);
-} else {
-    console.log("UYARI: 'events' klasörü bulunamadı!");
-}
-
 client.login(process.env.CLIENT_TOKEN);
