@@ -29,9 +29,9 @@ module.exports = {
             const timestamp = Math.floor(Date.now() / 1000);
 
             const channel = await interaction.guild.channels.create({
-                name: `ticket-${interaction.user.username}`,
+                name: `ticket-us-${interaction.user.username}`,
                 type: ChannelType.GuildText,
-                parent: CAT_US, // ARTIK DOĞRU KATEGORİYE AÇACAK
+                parent: CAT_US,
                 permissionOverwrites: [
                     { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
                     { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
@@ -149,7 +149,7 @@ module.exports = {
             const timestamp = Math.floor(Date.now() / 1000);
 
             const channel = await interaction.guild.channels.create({
-                name: `ticket-${interaction.user.username}`,
+                name: `ticket-tr-${interaction.user.username}`,
                 type: ChannelType.GuildText,
                 parent: CAT_TR, // TÜRKÇE KATEGORİ
                 permissionOverwrites: [
