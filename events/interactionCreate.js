@@ -7,7 +7,7 @@ const {
     ChannelType, 
     PermissionsBitField 
 } = require('discord.js');
-const TicketStats = require('../models/TicketStats'); // Model yolunu kendine göre ayarla
+const TicketStats = require('../models/TicketStats');
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -22,8 +22,6 @@ module.exports = {
         const ticketTypes = ['create_info', 'create_sikayet', 'create_basvuru', 'create_diger'];
         
         if (ticketTypes.includes(customId)) {
-            // Halihazırda açık ticketi var mı kontrolü eklenebilir.
-            
             await interaction.deferReply({ ephemeral: true });
 
             const channelName = `ticket-${user.username.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10)}-${Math.floor(Math.random() * 1000)}`;
@@ -71,11 +69,15 @@ module.exports = {
                     .setStyle(ButtonStyle.Danger)
             );
 
-            await channel.send({ 
+            // Mesajı gönder ve değişkene ata
+            const welcomeMessage = await channel.send({ 
                 content: `<@${user.id}> | <@&${staffRoleId}>`, 
                 embeds: [welcomeEmbed], 
                 components: [controlRow] 
             });
+
+            // İSTEK: Ticket ilk açıldığında mesajı sabitle
+            await welcomeMessage.pin();
 
             await interaction.editReply({ content: `Ticketin oluşturuldu: ${channel}` });
         }
@@ -86,7 +88,6 @@ module.exports = {
                 return interaction.reply({ content: 'Bu işlemi sadece yetkili ekibi yapabilir!', ephemeral: true });
             }
 
-            // Embedi alıp kontrol edelim, zaten sahiplenilmiş mi?
             const currentEmbed = interaction.message.embeds[0];
             const isClaimed = currentEmbed.fields.find(f => f.name === 'Sahiplenen Yetkili').value !== 'Bulunmuyor (Bekleniyor...)';
 
@@ -105,19 +106,18 @@ module.exports = {
                 console.error(err);
             }
 
-            // Embed Güncelleme
+            // İSTEK: Sahiplenildiğinde Description ve Renk değişimi
             const newEmbed = new EmbedBuilder(currentEmbed.data)
-                .setDescription(currentEmbed.description.replace('Durum: Sahipsiz', `Durum: Sahiplenildi - <@${user.id}>`))
+                .setDescription(`**Ticket <@${user.id}> Tarafından Sahiplenildi**\n- Ticket Sahipliğini Bırakmak İçin 📌 Butonuna Tıklayın`)
                 .setFields({ name: 'Sahiplenen Yetkili', value: `<@${user.id}>` })
-                .setColor('#f1c40f'); // Sarı renk (işlemde)
+                .setColor('Random'); // İSTEK: Random renk
 
-            // Butonları Güncelle (Claim -> Unclaim)
             const newRow = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
-                    .setCustomId('ticket_unclaim') // ID değişti
-                    .setLabel('Sahipliği Bırak')
-                    .setEmoji('📌')
-                    .setStyle(ButtonStyle.Secondary), // Gri buton
+                    .setCustomId('ticket_unclaim') 
+                    .setLabel('Sahipliği Bırak') // İsteğe bağlı, sadece emoji istenirse label silinebilir
+                    .setEmoji('📌') // İSTEK: Raptiye butonu
+                    .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
                     .setCustomId('ticket_close')
                     .setEmoji('<:zyphera_lock:1466044664346968309>')
@@ -128,6 +128,9 @@ module.exports = {
                     .setStyle(ButtonStyle.Danger)
             );
 
+            // İSTEK: Mesajın sabitlendiğinden emin ol (Zaten açılışta sabitledik ama garanti olsun)
+            if (!interaction.message.pinned) await interaction.message.pin();
+
             await interaction.channel.send({ content: `> <:zyphera_yesilraptiye:1466044628506771588> **Ticket <@${user.id}> tarafından sahiplenildi!**` });
             await interaction.update({ embeds: [newEmbed], components: [newRow] });
         }
@@ -136,11 +139,9 @@ module.exports = {
         if (customId === 'ticket_unclaim') {
             if (!member.roles.cache.has(staffRoleId)) return;
 
-            // Sadece sahiplenen kişi bırakabilir kontrolü
             const currentEmbed = interaction.message.embeds[0];
             const claimerField = currentEmbed.fields.find(f => f.name === 'Sahiplenen Yetkili').value;
             
-            // Eğer butona basan kişi, field'daki kişi değilse engelle
             if (!claimerField.includes(user.id)) {
                 return interaction.reply({ content: 'Bu ticketi sen sahiplenmediğin için bırakamazsın!', ephemeral: true });
             }
@@ -155,13 +156,12 @@ module.exports = {
                 console.error(err);
             }
 
-            // Embedi Eski Haline Getir
+            // Eski haline geri döndür
             const newEmbed = new EmbedBuilder(currentEmbed.data)
-                .setDescription(currentEmbed.description.replace(/Durum: Sahiplenildi - <@\d+>/, 'Durum: Sahipsiz'))
+                .setDescription('**Durum:** Sahipsiz (Boşa Çıkarıldı)')
                 .setFields({ name: 'Sahiplenen Yetkili', value: 'Bulunmuyor (Bekleniyor...)' })
-                .setColor('#00ffaa');
+                .setColor('#00ffaa'); // Standart renge dönüş
 
-            // Butonları Eski Haline Getir (Unclaim -> Claim)
             const newRow = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('ticket_claim')
@@ -186,11 +186,7 @@ module.exports = {
         if (customId === 'ticket_close') {
             if (!member.roles.cache.has(staffRoleId)) return interaction.reply({ content: 'Yetkin yok.', ephemeral: true });
 
-            // Kanalı kapat (Sadece yetkililer görebilir)
-            await interaction.channel.permissionOverwrites.edit(interaction.channel.topic || user.id, { // Not: Basitlik için user.id varsayıyoruz, gerçekte ticket sahibinin ID'sini saklamak gerekebilir.
-                 ViewChannel: false 
-            });
-            // Burada basitçe kanalı "everyone"a kapatıp adını değiştirebiliriz.
+            await interaction.channel.permissionOverwrites.edit(user.id, { ViewChannel: false }); // User ID düzeltmesi
             await interaction.channel.setName(`closed-${interaction.channel.name.split('-')[1]}`);
 
             const row = new ActionRowBuilder().addComponents(
@@ -202,9 +198,9 @@ module.exports = {
         }
 
         if (customId === 'ticket_unlock') {
-             // Tekrar açma mantığı...
              await interaction.channel.setName(interaction.channel.name.replace('closed', 'ticket'));
-             await interaction.message.delete(); // Kapat mesajını sil
+             await interaction.message.delete();
+             await interaction.channel.permissionOverwrites.edit(user.id, { ViewChannel: true }); // Kullanıcıyı tekrar ekle
              await interaction.reply({ content: 'Ticket tekrar açıldı.', ephemeral: true });
         }
 
