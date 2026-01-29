@@ -1,12 +1,19 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('ticket-kur')
-        .setDescription('Ticket panelini kurar.')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator), // Sadece adminler kurabilir
+        .setName('ticket-tr')
+        .setDescription('Zyphera ticket panelini sadece bot sahibi kurabilir.'),
     async execute(interaction) {
         
+        // --- SAHİP KONTROLÜ ---
+        if (interaction.user.id !== process.env.OWNER_ID) {
+            return interaction.reply({ 
+                content: '❌ Bu komutu sadece bot sahibi kullanabilir!', 
+                ephemeral: true 
+            });
+        }
+
         const embed = new EmbedBuilder()
             .setTitle('Zyphera Destek Sistemi')
             .setDescription('Yardıma ihtiyacın olan konuyu aşağıdaki butonlardan seçerek bir talep oluşturabilirsin.')
@@ -42,7 +49,7 @@ module.exports = {
                 .setStyle(ButtonStyle.Secondary)
         );
 
-        await interaction.reply({ content: 'Ticket paneli başarıyla kuruldu!', ephemeral: true });
+        await interaction.reply({ content: '✅ Ticket paneli kuruluyor...', ephemeral: true });
         await interaction.channel.send({ embeds: [embed], components: [buttons] });
     },
 };
