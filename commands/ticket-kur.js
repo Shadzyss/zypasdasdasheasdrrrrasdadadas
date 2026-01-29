@@ -2,35 +2,54 @@ const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, Butt
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('ticket-setup')
-        .setDescription('Ticket panelini kurar.')
-        .addStringOption(option =>
-            option.setName('language')
-                .setDescription('Panel dili / Panel language')
-                .setRequired(true)
-                .addChoices(
-                    { name: 'Turkish (TR)', value: 'tr' },
-                    { name: 'English (EN)', value: 'en' }
-                )),
+        .setName('ticket-tr')
+        .setDescription('Zyphera ticket panelini sadece bot sahibi kurabilir.'),
     async execute(interaction) {
-        if (interaction.user.id !== process.env.OWNER_ID) return interaction.reply({ content: '❌ Owner only!', ephemeral: true });
-
-        const lang = interaction.options.getString('language');
-        const isEn = lang === 'en';
+        
+        // --- SAHİP KONTROLÜ ---
+        if (interaction.user.id !== process.env.OWNER_ID) {
+            return interaction.reply({ 
+                content: '❌ Bu komutu sadece bot sahibi kullanabilir!', 
+                ephemeral: true 
+            });
+        }
 
         const embed = new EmbedBuilder()
-            .setTitle(isEn ? 'Zyphera Support System' : 'Zyphera Destek Sistemi')
-            .setDescription(isEn ? 'Select a topic to open a ticket.' : 'Bir talep oluşturmak için konu seçiniz.')
-            .setColor('Blurple');
+            .setTitle('Zyphera Destek Sistemi')
+            .setDescription('Yardıma ihtiyacın olan konuyu aşağıdaki butonlardan seçerek bir talep oluşturabilirsin.')
+            .addFields(
+                { name: 'ℹ️ Bilgi Almak İçin', value: 'Bilgi almak için ticket açar.', inline: true },
+                { name: '🛡️ Şikayet İçin', value: 'Şikayet talebi oluşturur.', inline: true },
+                { name: '🧩 Yetkili Başvurusu', value: 'Ekibimize katılmak için başvuru açar.', inline: true },
+                { name: '⏳ Diğer Destek', value: 'Genel konular için destek talebi.', inline: true }
+            )
+            .setColor('Blurple')
+            .setFooter({ text: 'Zyphera Ticket Sistemi' });
 
         const buttons = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`ticket_info_${lang}`).setLabel(isEn ? 'Information' : 'Bilgi Al').setStyle(ButtonStyle.Primary).setEmoji('<:zyphera_info:1466034688903610471>'),
-            new ButtonBuilder().setCustomId(`ticket_sikayet_${lang}`).setLabel(isEn ? 'Complaint' : 'Şikayet').setStyle(ButtonStyle.Danger).setEmoji('<:zyphera_kalkan:1466034432183111761>'),
-            new ButtonBuilder().setCustomId(`ticket_basvuru_${lang}`).setLabel(isEn ? 'Application' : 'Başvuru').setStyle(ButtonStyle.Success).setEmoji('<a:zyphera_parca:1464095414201352254>'),
-            new ButtonBuilder().setCustomId(`ticket_destek_${lang}`).setLabel(isEn ? 'Support' : 'Destek').setStyle(ButtonStyle.Secondary).setEmoji('<a:zyphera_yukleniyor:1464095331863101514>')
+            new ButtonBuilder()
+                .setCustomId('ticket_info')
+                .setEmoji('<:zyphera_info:1466034688903610471>')
+                .setLabel('Bilgi Al')
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+                .setCustomId('ticket_sikayet')
+                .setEmoji('<:zyphera_kalkan:1466034432183111761>')
+                .setLabel('Şikayet')
+                .setStyle(ButtonStyle.Danger),
+            new ButtonBuilder()
+                .setCustomId('ticket_basvuru')
+                .setEmoji('<a:zyphera_parca:1464095414201352254>')
+                .setLabel('Başvuru')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId('ticket_destek')
+                .setEmoji('<a:zyphera_yukleniyor:1464095331863101514>')
+                .setLabel('Destek')
+                .setStyle(ButtonStyle.Secondary)
         );
 
-        await interaction.reply({ content: `✅ ${lang.toUpperCase()} panel created.`, ephemeral: true });
+        await interaction.reply({ content: '✅ Ticket paneli kuruluyor...', ephemeral: true });
         await interaction.channel.send({ embeds: [embed], components: [buttons] });
     },
 };
