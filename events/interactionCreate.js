@@ -49,7 +49,7 @@ module.exports = {
             return interaction.editReply(`Ticket açıldı: ${channel}`);
         }
 
-        // --- 2. KAPATMA İSTEĞİ (SARI EMBED) ---
+        // --- 2. KAPATMA ONAYI (SARI) ---
         if (interaction.customId === 'close_request') {
             const yellowEmbed = new EmbedBuilder()
                 .setTitle('Ticket Kapatılıyor')
@@ -63,14 +63,14 @@ module.exports = {
             await interaction.reply({ embeds: [yellowEmbed], components: [row] });
         }
 
-        // --- 3. ONAYLA BUTONU (YEŞİL EMBED - KAPATILDI) ---
+        // --- 3. ONAYLA (KAPATMA İŞLEMİ) ---
         if (interaction.customId === 'confirm_close') {
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
             
-            // Kullanıcının yazma yetkisini alalım
-            await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { SendMessages: false });
+            // Ticket sahibinin kanalı görmesini engelle
+            await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: false });
 
-            const greenEmbed = new EmbedBuilder()
+            const greenCloseEmbed = new EmbedBuilder()
                 .setTitle('Ticket Kapatıldı')
                 .setDescription(`**Ticket ${interaction.user} Adlı Kişi Tarafından Kapatıldı Ticketi Yeniden Açmak İçin <:zyphera_unlock:1466044688908947636> Butonuna Tıklayın Ticketı Silmek İçin <:zyphera_cop:1466044646403870730> Butonuna Basın**`)
                 .setColor('Green');
@@ -80,31 +80,36 @@ module.exports = {
                 new ButtonBuilder().setCustomId('final_delete').setEmoji('<:zyphera_cop:1466044646403870730>').setLabel('Sil').setStyle(ButtonStyle.Danger)
             );
 
-            await interaction.update({ embeds: [greenEmbed], components: [row] });
+            await interaction.update({ embeds: [greenCloseEmbed], components: [row] });
         }
 
         // --- 4. GERİ AÇ BUTONU ---
         if (interaction.customId === 'reopen_ticket') {
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { SendMessages: true });
             
-            await interaction.message.delete();
-            await interaction.channel.send({ content: 'Ticket tekrar açıldı!' }).then(m => setTimeout(() => m.delete(), 3000));
+            // Ticket sahibine kanalı tekrar göster
+            await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: true, SendMessages: true });
+
+            const reopenEmbed = new EmbedBuilder()
+                .setTitle('Ticket Geri Açıldı')
+                .setDescription(`**Ticket ${interaction.user} Tarafından Geri Açıldı Ticketi Kapatmak İçin Sabitlenenlerdeki Embede Gidip <:zyphera_lock:1466044664346968309> Butonuna Tıklayın**`)
+                .setColor('Green');
+
+            await interaction.message.delete(); // Kapatıldı embedini sil
+            await interaction.channel.send({ content: `<@${ticketData.ownerID}>`, embeds: [reopenEmbed] });
         }
 
-        // --- 5. SİL BUTONU ---
+        // --- 5. SİL / İPTAL / SAHİPLENME (ÖNCEKİLERLE AYNI) ---
         if (interaction.customId === 'final_delete') {
             await interaction.reply('Kanal 5 saniye içinde siliniyor...');
             await Ticket.deleteOne({ channelID: interaction.channel.id });
             setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
         }
 
-        // --- 6. İPTAL ET ---
         if (interaction.customId === 'cancel_close') {
             await interaction.message.delete();
         }
 
-        // --- 7. SAHİPLENME (CLAIM) ---
         if (interaction.customId === 'claim') {
             if (!interaction.member.roles.cache.has(STAFF_ROLE)) return interaction.reply({ content: 'Yetkin yok!', ephemeral: true });
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
@@ -114,8 +119,7 @@ module.exports = {
             await Staff.findOneAndUpdate({ userID: interaction.user.id }, { $inc: { claimCount: 1 } }, { upsert: true });
 
             const oldEmbed = interaction.message.embeds[0];
-            const claimedEmbed = EmbedBuilder.from(oldEmbed)
-                .setDescription(oldEmbed.description.replace('`Sahiplenilmedi`', `Sahiplendi ( ${interaction.user} Yetkili )`));
+            const claimedEmbed = EmbedBuilder.from(oldEmbed).setDescription(oldEmbed.description.replace('`Sahiplenilmedi`', `Sahiplendi ( ${interaction.user} Yetkili )`));
 
             const buttons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId('unclaim').setEmoji('📌').setLabel('Geri Bırak').setStyle(ButtonStyle.Danger),
@@ -124,17 +128,15 @@ module.exports = {
             await interaction.update({ embeds: [claimedEmbed], components: [buttons] });
         }
 
-        // --- 8. SAHİPLİĞİ BIRAKMA (UNCLAIM) ---
         if (interaction.customId === 'unclaim') {
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            if (interaction.user.id !== ticketData?.claimerID) return interaction.reply({ content: 'Sen sahiplenmemişsin!', ephemeral: true });
+            if (interaction.user.id !== ticketData?.claimerID) return interaction.reply({ content: 'Sadece sahiplenen bırakabilir!', ephemeral: true });
 
             await Ticket.findOneAndUpdate({ channelID: interaction.channel.id }, { claimerID: null });
             await Staff.findOneAndUpdate({ userID: interaction.user.id }, { $inc: { claimCount: -1 } });
 
             const oldEmbed = interaction.message.embeds[0];
-            const unclaimedEmbed = EmbedBuilder.from(oldEmbed)
-                .setDescription(oldEmbed.description.replace(/Sahiplendi \( <@!?\d+> Yetkili \)/, '`Sahiplenilmedi`'));
+            const unclaimedEmbed = EmbedBuilder.from(oldEmbed).setDescription(oldEmbed.description.replace(/Sahiplendi \( <@!?\d+> Yetkili \)/, '`Sahiplenilmedi`'));
 
             const buttons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId('claim').setEmoji('<:zyphera_yesilraptiye:1466044628506771588>').setLabel('Sahiplen').setStyle(ButtonStyle.Success),
