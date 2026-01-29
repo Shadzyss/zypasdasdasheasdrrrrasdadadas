@@ -8,18 +8,22 @@ module.exports = {
         .addUserOption(opt => opt.setName('kullanıcı').setDescription('Yetkili / Staff').setRequired(true))
         .addIntegerOption(opt => opt.setName('sayı').setDescription('Miktar / Amount').setRequired(true)),
     async execute(interaction) {
-        if (!interaction.member.roles.cache.has(process.env.YETKILI_SORUMLUSU_ROL_ID)) return interaction.reply({ content: '❌ No permission!', ephemeral: true });
+        const isUs = interaction.member.roles.cache.has(process.env.ROLE_ID_ENGLISH);
+        
+        const sendError = (msg) => {
+            const errEmbed = new EmbedBuilder().setColor('Red').setDescription(`**${msg}**`);
+            return interaction.reply({ embeds: [errEmbed], ephemeral: true });
+        };
+
+        if (!interaction.member.roles.cache.has(process.env.YETKILI_SORUMLUSU_ROL_ID)) {
+            return sendError(isUs ? '❌ No permission!' : '❌ Bu komutu kullanmak için yetkin yok!');
+        }
 
         const user = interaction.options.getUser('kullanıcı');
         const count = interaction.options.getInteger('sayı');
-        const isUs = interaction.member.roles.cache.has(process.env.ROLE_ID_ENGLISH);
 
-        // --- BOT KONTROLÜ ---
         if (user.bot) {
-            return interaction.reply({ 
-                content: isUs ? '❌ You cannot add points to bots!' : '❌ Botlara puan ekleyemezsin!', 
-                ephemeral: true 
-            });
+            return sendError(isUs ? '❌ You cannot add points to bots!' : '❌ Botlara puan ekleyemezsin!');
         }
 
         await Staff.findOneAndUpdate({ userID: user.id }, { $inc: { claimCount: count } }, { upsert: true });

@@ -6,9 +6,12 @@ module.exports = {
         .setName('ticket-sıfırla')
         .setDescription('Puanları sıfırlar / Resets all points.'),
     async execute(interaction) {
-        if (!interaction.member.roles.cache.has(process.env.YETKILI_SORUMLUSU_ROL_ID)) return interaction.reply({ content: '❌ No permission!', ephemeral: true });
-
         const isUs = interaction.member.roles.cache.has(process.env.ROLE_ID_ENGLISH);
+
+        if (!interaction.member.roles.cache.has(process.env.YETKILI_SORUMLUSU_ROL_ID)) {
+            const errEmbed = new EmbedBuilder().setColor('Red').setDescription(isUs ? '**❌ No permission!**' : '**❌ Bu komutu kullanmak için yetkin yok!**');
+            return interaction.reply({ embeds: [errEmbed], ephemeral: true });
+        }
 
         const confirmEmbed = new EmbedBuilder()
             .setTitle(isUs ? 'Reset Confirmation' : 'Sıfırlama Onayı')
@@ -29,14 +32,15 @@ module.exports = {
             if (conf.customId === 'reset_confirm') {
                 await Staff.updateMany({}, { claimCount: 0 });
                 const success = new EmbedBuilder()
-                    .setTitle(isUs ? 'Ticket Sahiplenme Sayısı Sıfırlandı' : 'Ticket Sahiplenme Sayısı Sıfırlandı') // İstediğin başlık
+                    .setTitle('Ticket Sahiplenme Sayısı Sıfırlandı')
                     .setDescription(isUs 
                         ? `**${interaction.user} Successfully reset all staff ticket claim counts**`
                         : `**${interaction.user} Başarıyla Bütün Yetkililerin Ticket Sahiplenme Sayısı Sıfırlandı**`)
                     .setColor('Green');
                 await conf.update({ embeds: [success], components: [] });
             } else {
-                await conf.update({ content: isUs ? 'Cancelled.' : 'İşlem iptal edildi.', embeds: [], components: [] });
+                const cancelEmbed = new EmbedBuilder().setColor('Red').setDescription(isUs ? '**❌ Cancelled.**' : '**❌ İşlem iptal edildi.**');
+                await conf.update({ embeds: [cancelEmbed], components: [] });
             }
         } catch (e) {
             await interaction.editReply({ content: 'Timeout.', components: [] });

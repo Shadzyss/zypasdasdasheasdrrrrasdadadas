@@ -8,35 +8,39 @@ module.exports = {
         .addUserOption(opt => opt.setName('kullanıcı').setDescription('Yetkili / Staff').setRequired(true))
         .addIntegerOption(opt => opt.setName('sayı').setDescription('Miktar / Amount').setRequired(true)),
     async execute(interaction) {
-        if (!interaction.member.roles.cache.has(process.env.YETKILI_SORUMLUSU_ROL_ID)) return interaction.reply({ content: '❌ No permission!', ephemeral: true });
+        const isUs = interaction.member.roles.cache.has(process.env.ROLE_ID_ENGLISH);
+        
+        // Hata Embed Fonksiyonu (Kod kalabalığı yapmasın diye)
+        const sendError = (msg) => {
+            const errEmbed = new EmbedBuilder().setColor('Red').setDescription(`**${msg}**`);
+            return interaction.reply({ embeds: [errEmbed], ephemeral: true });
+        };
+
+        // Yetki Kontrolü
+        if (!interaction.member.roles.cache.has(process.env.YETKILI_SORUMLUSU_ROL_ID)) {
+            return sendError(isUs ? '❌ No permission!' : '❌ Bu komutu kullanmak için yetkin yok!');
+        }
 
         const user = interaction.options.getUser('kullanıcı');
         const count = interaction.options.getInteger('sayı');
-        const isUs = interaction.member.roles.cache.has(process.env.ROLE_ID_ENGLISH);
 
-        // --- 1. BOT KONTROLÜ ---
+        // Bot Kontrolü
         if (user.bot) {
-            return interaction.reply({ 
-                content: isUs ? '❌ You cannot perform this action on bots!' : '❌ Botlar üzerinde bu işlemi yapamazsın!', 
-                ephemeral: true 
-            });
+            return sendError(isUs ? '❌ You cannot perform this action on bots!' : '❌ Botlar üzerinde bu işlemi yapamazsın!');
         }
 
-        // --- 2. 0 PUAN KONTROLÜ ---
         const staffData = await Staff.findOne({ userID: user.id });
         const currentPoints = staffData ? staffData.claimCount : 0;
 
+        // 0 Puan Kontrolü
         if (currentPoints <= 0) {
-            return interaction.reply({ 
-                content: isUs ? `❌ ${user.username} already has 0 points, cannot decrease further!` : `❌ ${user.username} adlı kişinin puanı zaten 0, daha fazla düşüremezsin!`, 
-                ephemeral: true 
-            });
+            return sendError(isUs ? `❌ ${user.username} already has 0 points!` : `❌ ${user.username} adlı kişinin puanı zaten 0!`);
         }
 
-        // Puan silme (Puanın 0'ın altına düşmemesini garantiye alıyoruz)
         const finalCount = count > currentPoints ? currentPoints : count;
         await Staff.findOneAndUpdate({ userID: user.id }, { $inc: { claimCount: -finalCount } }, { upsert: true });
 
+        // Başarı Mesajları
         if (isUs) {
             const usEmbed = new EmbedBuilder()
                 .setTitle('Ticket Claim Count Deleted')
