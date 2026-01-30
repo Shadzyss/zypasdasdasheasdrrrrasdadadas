@@ -22,7 +22,6 @@ module.exports = {
             'ticket_destek_us': { label: 'Other Support', emoji: '<a:zyphera_yukleniyor:1464095331863101514>' }
         };
 
-        // US Butonlarından birine basıldıysa
         if (ticketConfigUS[interaction.customId]) {
             await interaction.deferReply({ ephemeral: true });
             const selected = ticketConfigUS[interaction.customId];
@@ -55,7 +54,6 @@ module.exports = {
             return interaction.editReply(`Ticket opened: ${channel}`);
         }
 
-        // US Sisteminin diğer butonları
         if (interaction.customId.endsWith('_us')) {
             if (interaction.customId === 'claim_us') {
                 if (!interaction.member.roles.cache.has(STAFF_US)) return interaction.reply({ content: 'No permission!', ephemeral: true });
@@ -88,6 +86,11 @@ module.exports = {
                     new ButtonBuilder().setCustomId('close_request_us').setEmoji('<:zyphera_lock:1466044664346968309>').setLabel('Close').setStyle(ButtonStyle.Secondary)
                 );
                 await interaction.update({ embeds: [unclaimedEmbed], components: [buttons] });
+                
+                // --- EKLENEN US UNCLAIM BİLDİRİMİ ---
+                const unclaimNotify = new EmbedBuilder().setTitle('Claim Released').setDescription(`**Ticket claim released by ${interaction.user}**`).setColor('Green');
+                const notifyMsg = await interaction.channel.send({ embeds: [unclaimNotify] });
+                setTimeout(() => notifyMsg.delete().catch(() => {}), 3000);
             }
 
             if (interaction.customId === 'close_request_us') {
@@ -129,8 +132,7 @@ module.exports = {
                 await Ticket.deleteOne({ channelID: interaction.channel.id });
                 return setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
             }
-            
-            return; // US işlemi bittiyse burada dur, TR koduna girme
+            return;
         }
 
         // ==========================================
@@ -151,7 +153,7 @@ module.exports = {
             const channel = await interaction.guild.channels.create({
                 name: `ticket-${interaction.user.username}`,
                 type: ChannelType.GuildText,
-                parent: CAT_TR, // TÜRKÇE KATEGORİ
+                parent: CAT_TR,
                 permissionOverwrites: [
                     { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
                     { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },

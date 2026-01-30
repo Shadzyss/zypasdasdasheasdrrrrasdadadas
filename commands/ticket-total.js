@@ -3,7 +3,7 @@ const { Staff } = require('../models/ticketSchema');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('ticket-top')
+        .setName('ticket-total')
         .setDescription('En Çok Ticket Sahiplenen Yetkilileri Listeler'),
     async execute(interaction) {
         // Rolleri .env'den çekiyoruz
