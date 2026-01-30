@@ -4,8 +4,8 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('sunucu-bilgi')
         .setNameLocalization('en-US', 'server-info')
-        .setDescription('Sunucu hakkında detaylı bilgi verir.')
-        .setDescriptionLocalization('en-US', 'Provides detailed information about the server.'),
+        .setDescription('Sunucu Hakkında Bilgi Verir.')
+        .setDescriptionLocalization('en-US', 'Provides information about the server.'),
 
     async execute(interaction) {
         const { guild } = interaction;
@@ -68,13 +68,13 @@ module.exports = {
             .setImage(guild.bannerURL({ size: 1024 })) 
             .setColor('#2b2d31')
             .addFields(
-                { name: `<:zyphera_blurpletac:1466051421253275791> ${t.owner}`, value: `${owner} (\`${owner.id}\`)`, inline: true },
+                { name: `<a:zyphera_owner:1464097165570736255> ${t.owner}`, value: `${owner} (\`${owner.id}\`)`, inline: true },
                 { name: `<:zyphera_server:1466051437086773290> ${t.created}`, value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`, inline: true },
                 { name: '\u200B', value: '\u200B', inline: true },
-                { name: `<:zyphera_info:1466034688903610471> ${t.members}`, value: t.stats, inline: true },
-                { name: `<:zyphera_bell:1466051402664251524> ${t.channels}`, value: t.channelStats, inline: true },
+                { name: `<a:zyphera_kalpdans:1464095326637129810> ${t.members}`, value: t.stats, inline: true },
+                { name: `<:zyphera_link:1464095315727745189> ${t.channels}`, value: t.channelStats, inline: true },
                 { name: `<a:zyphera_parca:1464095414201352254> ${t.extras}`, value: t.extraStats, inline: true },
-                { name: `<:zyphera_yesilraptiye:1466044628506771588> ${t.boost}`, value: t.boostStats, inline: true }
+                { name: `<a:zyphera_nitrorozet:1464095330076459058>> ${t.boost}`, value: t.boostStats, inline: true }
             )
             .setFooter({ text: t.footer, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) })
             .setTimestamp();
