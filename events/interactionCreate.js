@@ -21,11 +21,22 @@ module.exports = {
             'ticket_basvuru_us': { label: 'Staff Application', emoji: '<a:zyphera_parca:1464095414201352254>' },
             'ticket_destek_us': { label: 'Other Support', emoji: '<a:zyphera_yukleniyor:1464095331863101514>' }
         };
+        
 
         if (ticketConfigUS[interaction.customId]) {
             await interaction.deferReply({ ephemeral: true });
             const selected = ticketConfigUS[interaction.customId];
             const timestamp = Math.floor(Date.now() / 1000);
+
+            // --- LİMİT KONTROLÜ (US) ---
+            const existingTicket = await Ticket.findOne({ ownerID: interaction.user.id });
+            if (existingTicket && interaction.guild.channels.cache.has(existingTicket.channelID)) {
+                return interaction.reply({ content: '❌ You already have an open ticket!', ephemeral: true });
+            }
+            if (existingTicket) await Ticket.deleteOne({ ownerID: interaction.user.id }); // Kanal yok ama veri varsa temizle
+            // --- LİMİT KONTROLÜ BİTTİ ---
+
+            await interaction.deferReply({ ephemeral: true });
 
             const channel = await interaction.guild.channels.create({
                 name: `ticket-${interaction.user.username}`,
@@ -149,6 +160,16 @@ module.exports = {
             await interaction.deferReply({ ephemeral: true });
             const selected = ticketConfig[interaction.customId];
             const timestamp = Math.floor(Date.now() / 1000);
+
+            // --- LİMİT KONTROLÜ (TR) ---
+            const existingTicket = await Ticket.findOne({ ownerID: interaction.user.id });
+            if (existingTicket && interaction.guild.channels.cache.has(existingTicket.channelID)) {
+                return interaction.reply({ content: '❌ Zaten açık bir ticket\'ın bulunuyor!', ephemeral: true });
+            }
+            if (existingTicket) await Ticket.deleteOne({ ownerID: interaction.user.id }); // Temizlik
+            // --- LİMİT KONTROLÜ BİTTİ ---
+
+            await interaction.deferReply({ ephemeral: true });
 
             const channel = await interaction.guild.channels.create({
                 name: `ticket-${interaction.user.username}`,
