@@ -62,7 +62,7 @@ module.exports = {
             .setThumbnail(interaction.client.user.displayAvatarURL())
             .setColor('#5865F2')
             .addFields(
-                { name: `<a:zyphera_owner:1464097165570736255> ${t.owner}`, value: `\`<@1423971386950549626>\``, inline: true },
+                { name: `<a:zyphera_owner:1464097165570736255> ${t.owner}`, value: `<@1423971386950549626>`, inline: true },
                 { name: `<:zyphera_server:1466051437086773290> ${t.uptime}`, value: `\`${t.uptimeVal}\``, inline: true },
                 { name: '\u200B', value: '\u200B', inline: true },
                 { name: `<:zyphera_info:1466034688903610471> ${t.stats}`, value: t.statsVal, inline: true },
@@ -76,11 +76,7 @@ module.exports = {
             new ButtonBuilder()
                 .setLabel(t.buttons.support)
                 .setStyle(ButtonStyle.Link)
-                .setURL('https://discord.gg/your-link'), // Burayı değiştir kanka
-            new ButtonBuilder()
-                .setLabel(t.buttons.invite)
-                .setStyle(ButtonStyle.Link)
-                .setURL(`https://discord.com/api/oauth2/authorize?client_id=${interaction.client.user.id}&permissions=8&scope=bot%20applications.commands`)
+                .setURL('https://discord.gg/Rzx3ZB47'),
         );
 
         return interaction.reply({ embeds: [embed], components: [row] });
