@@ -56,7 +56,7 @@ module.exports = {
                 orangeDesc: `**📙 \`/yetkili-ekle <user>\` --> Add user to Bot Staff category\n📙 \`/yetkili-çıkar <user>\` --> Remove user from Bot Staff category\n📙 \`/abone-ekle <user> <count>\` --> Add subscriber count to a user\n📙 \`/abone-sil <user> <count>\` --> Remove subscriber count from a user\n📙 \`/dm-mesaj <user> <message>\` --> Send a DM to a user**`,
                 
                 booksTitle: "Staff Manager Commands",
-                booksDesc: `**📚 \`/uyarı <user> <reason>\` --> Warns The Mentioned Staff Member\n📚 \`/uyarı-sil <user> <reason>\` --> Removes A Warning From The Mentioned Staff Member\n📚 \`/uyarıları-sıfırla\` --> Resets All Staff Members' Warnings📚 \`/ticket-ekle <kullanıcı> <miktar>\` --> Add ticket claims to a staff member\n📚 \`/ticket-sil <kullanıcı> <miktar>\` --> Remove ticket claims from a staff member\n📚 \`/ticket-sıfırla\` --> Reset all staff claim counts**`,
+                booksDesc: `**📚 \`/uyarı <user> <reason>\` --> Warns The Mentioned Staff Member\n📚 \`/uyarı-sil <user> <reason>\` --> Removes A Warning From The Mentioned Staff Member\n📚 \`/uyarıları-sıfırla\` --> Resets All Staff Members' Warnings\n📚 \`/ticket-ekle <kullanıcı> <miktar>\` --> Add ticket claims to a staff member\n📚 \`/ticket-sil <kullanıcı> <miktar>\` --> Remove ticket claims from a staff member\n📚 \`/ticket-sıfırla\` --> Reset all staff claim counts**`,
 
                 crownTitle: "Server Owner Commands",
                 crownDesc: `**👑 \`/herkese-rol-ver @role\` --> Give a role to everyone in the server\n👑 \`/herkesten-rol-al @role\` --> Take a role from everyone in the server**`,
