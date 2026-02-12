@@ -18,9 +18,9 @@ module.exports = {
         // Kullanıcılardan silinmesini istediğin uyarı rollerinin ID'lerini buraya yaz.
         // Örnek: [process.env.WARN_ROLE_1, process.env.WARN_ROLE_2] veya ["ID1", "ID2"]
         const WARN_ROLE_IDS = [
-            process.env.WARN_ROLE_1, // 1. Uyarı Rolü ID'si (env dosyasındaysa)
-            process.env.WARN_ROLE_2, // 2. Uyarı Rolü ID'si
-            process.env.WARN_ROLE_3  // 3. Uyarı Rolü ID'si
+            process.env.UYARI_1X, // 1. Uyarı Rolü ID'si (env dosyasındaysa)
+            process.env.UYARI_2X, // 2. Uyarı Rolü ID'si
+            process.env.UYARI_3X  // 3. Uyarı Rolü ID'si
         ]; 
 
         // --- DİL KONTROLLERİ ---
