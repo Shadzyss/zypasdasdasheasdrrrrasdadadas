@@ -12,10 +12,6 @@ module.exports = {
         const STAFF_US = process.env.STAFF_US_ROLE_ID; 
         const CAT_US = process.env.TICKET_KATEGORI_US;
         
-        // --- DİL ROLLERİ ---
-        // ROLE_TR_ID artık kullanılmasa da tanımlı kalsın, biz sadece US kontrolü yapacağız.
-        const ROLE_US_ID = process.env.ROLE_ID_ENGLISH;
-
         // --- CONFIGLER ---
         const ticketConfigUS = {
             'ticket_info_us': { label: 'Information', emoji: '<:zyphera_info:1466034688903610471>' },
@@ -119,8 +115,10 @@ module.exports = {
 
         // --- CLAIM ---
         if (interaction.customId === 'claim' || interaction.customId === 'claim_us') {
-            const isUS = interaction.customId.endsWith('_us');
+            const isUS = interaction.customId.endsWith('_us'); // Buton ID'sine göre dil kontrolü
             const staffRole = isUS ? STAFF_US : STAFF_TR;
+            
+            // Yetki kontrolü
             if (!interaction.member.roles.cache.has(staffRole)) return interaction.reply({ content: isUS ? 'No permission!' : 'Yetkin yok!', ephemeral: true });
 
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
@@ -142,12 +140,10 @@ module.exports = {
             await interaction.update({ embeds: [claimedEmbed], components: [buttons] });
 
             // --- SAHİPLENİLDİ MESAJI ---
-            // MANTIK: Eğer kullanıcıda US rolü varsa -> EN, yoksa (TR veya hiç rol yok) -> TR
-            const isClickerUS = interaction.member.roles.cache.has(ROLE_US_ID);
-            
+            // ARTIK KİŞİNİN ROLÜNE DEĞİL, BUTONUN DİLİNE (isUS) BAKIYORUZ
             const claimNotifyEmbed = new EmbedBuilder()
-                .setTitle(isClickerUS ? "Ticket Claimed" : "Ticket Sahiplenildi")
-                .setDescription(isClickerUS
+                .setTitle(isUS ? "Ticket Claimed" : "Ticket Sahiplenildi")
+                .setDescription(isUS
                     ? `**Ticket claimed by ${interaction.user}. Click 📌 to unclaim.**`
                     : `**Ticket ${interaction.user} Tarafından Sahiplenildi. Bırakmak İçin 📌 Butonuna Tıklayın**`)
                 .setColor("Green");
@@ -159,7 +155,7 @@ module.exports = {
 
         // --- UNCLAIM ---
         if (interaction.customId === 'unclaim' || interaction.customId === 'unclaim_us') {
-            const isUS = interaction.customId.endsWith('_us');
+            const isUS = interaction.customId.endsWith('_us'); // Buton ID'sine göre dil kontrolü
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
             if (interaction.user.id !== ticketData?.claimerID) return interaction.reply({ content: isUS ? 'Only claimer!' : 'Sadece sahiplenen bırakabilir!', ephemeral: true });
 
@@ -179,12 +175,10 @@ module.exports = {
             await interaction.update({ embeds: [unclaimedEmbed], components: [buttons] });
 
             // --- BIRAKILDI MESAJI ---
-            // MANTIK: Eğer kullanıcıda US rolü varsa -> EN, yoksa (TR veya hiç rol yok) -> TR
-            const isClickerUS = interaction.member.roles.cache.has(ROLE_US_ID);
-
+            // ARTIK KİŞİNİN ROLÜNE DEĞİL, BUTONUN DİLİNE (isUS) BAKIYORUZ
             const unclaimNotifyEmbed = new EmbedBuilder()
-                .setTitle(isClickerUS ? "Ticket Unclaimed" : "Ticket Bırakıldı")
-                .setDescription(isClickerUS
+                .setTitle(isUS ? "Ticket Unclaimed" : "Ticket Bırakıldı")
+                .setDescription(isUS
                     ? `**Ticket unclaimed by ${interaction.user}. Click <:zyphera_yesilraptiye:1466044628506771588> to claim again.**`
                     : `**Ticket ${interaction.user} Tarafından Bırakıldı. Geri Sahiplenmek İçin <:zyphera_yesilraptiye:1466044628506771588> Butonuna Tıklayın**`)
                 .setColor("Red");
