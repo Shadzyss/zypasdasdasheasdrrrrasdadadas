@@ -10,7 +10,11 @@ module.exports = {
         const STAFF_TR = process.env.STAFF_TR_ROLE_ID;
         const CAT_TR = process.env.TICKET_KATEGORI;
         const STAFF_US = process.env.STAFF_US_ROLE_ID; 
-        const CAT_US = process.env.TICKET_KATEGORI_US; 
+        const CAT_US = process.env.TICKET_KATEGORI_US;
+        
+        // --- DİL ROLLERİ (Yeni Eklendi) ---
+        const ROLE_TR_ID = process.env.ROLE_ID_TURKISH;
+        const ROLE_US_ID = process.env.ROLE_ID_ENGLISH;
 
         // --- CONFIGLER ---
         const ticketConfigUS = {
@@ -136,6 +140,20 @@ module.exports = {
             );
 
             await interaction.update({ embeds: [claimedEmbed], components: [buttons] });
+
+            // --- YENİ EKLENEN MESAJ KISMI (SAHİPLENİLDİ) ---
+            const isClickerTR = interaction.member.roles.cache.has(ROLE_TR_ID);
+            
+            const claimNotifyEmbed = new EmbedBuilder()
+                .setTitle(isClickerTR ? "Ticket Sahiplenildi" : "Ticket Claimed")
+                .setDescription(isClickerTR
+                    ? `**Ticket ${interaction.user} Tarafından Sahiplenildi. Bırakmak İçin 📌 Butonuna Tıklayın**`
+                    : `**Ticket claimed by ${interaction.user}. Click 📌 to unclaim.**`)
+                .setColor("Green");
+
+            interaction.channel.send({ embeds: [claimNotifyEmbed] }).then(msg => {
+                setTimeout(() => msg.delete().catch(() => {}), 3000);
+            });
         }
 
         // --- UNCLAIM ---
@@ -158,6 +176,20 @@ module.exports = {
             );
 
             await interaction.update({ embeds: [unclaimedEmbed], components: [buttons] });
+
+            // --- YENİ EKLENEN MESAJ KISMI (BIRAKILDI) ---
+            const isClickerTR = interaction.member.roles.cache.has(ROLE_TR_ID);
+
+            const unclaimNotifyEmbed = new EmbedBuilder()
+                .setTitle(isClickerTR ? "Ticket Bırakıldı" : "Ticket Unclaimed")
+                .setDescription(isClickerTR
+                    ? `**Ticket ${interaction.user} Tarafından Bırakıldı. Geri Sahiplenmek İçin <:zyphera_yesilraptiye:1466044628506771588> Butonuna Tıklayın**`
+                    : `**Ticket unclaimed by ${interaction.user}. Click <:zyphera_yesilraptiye:1466044628506771588> to claim again.**`)
+                .setColor("Red");
+
+            interaction.channel.send({ embeds: [unclaimNotifyEmbed] }).then(msg => {
+                setTimeout(() => msg.delete().catch(() => {}), 3000);
+            });
         }
 
         // --- CLOSE REQUEST & CANCEL ---
@@ -186,7 +218,16 @@ module.exports = {
         if (interaction.customId === 'confirm_close' || interaction.customId === 'confirm_close_us') {
             const isUS = interaction.customId.endsWith('_us');
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: false });
+            
+            // --- BUG FIX: Kullanıcı sunucudan çıktıysa hata vermesin ---
+            if (ticketData && ticketData.ownerID) {
+                try {
+                    await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: false });
+                } catch (error) {
+                    console.log("Kullanıcı sunucudan çıktığı için izinler düzenlenemedi, işlem devam ediyor.");
+                }
+            }
+            // ------------------------------------------------------------
 
             const greenCloseEmbed = new EmbedBuilder()
                 .setTitle(isUS ? 'Ticket Closed' : 'Ticket Kapatıldı')
@@ -204,9 +245,22 @@ module.exports = {
         if (interaction.customId === 'reopen_ticket' || interaction.customId === 'reopen_ticket_us') {
             const isUS = interaction.customId.endsWith('_us');
             const ticketData = await Ticket.findOne({ channelID: interaction.channel.id });
-            await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: true, SendMessages: true });
+
+            // --- BUG FIX: Kullanıcı sunucudan çıktıysa hata vermesin ---
+            if (ticketData && ticketData.ownerID) {
+                try {
+                    await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: true, SendMessages: true });
+                } catch (error) {
+                    // Kullanıcı yoksa sadece devam et
+                }
+            }
+            // ------------------------------------------------------------
+
             await interaction.message.delete();
-            const sentReopen = await interaction.channel.send({ content: `<@${ticketData.ownerID}>`, embeds: [new EmbedBuilder().setTitle(isUS ? 'Reopened' : 'Ticket Geri Açıldı').setColor('Green')] });
+            const sentReopen = await interaction.channel.send({ 
+                content: ticketData ? `<@${ticketData.ownerID}>` : '', 
+                embeds: [new EmbedBuilder().setTitle(isUS ? 'Reopened' : 'Ticket Geri Açıldı').setColor('Green')] 
+            });
             setTimeout(() => sentReopen.delete().catch(() => {}), 2000);
         }
 
