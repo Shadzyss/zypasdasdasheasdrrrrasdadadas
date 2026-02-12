@@ -22,7 +22,7 @@ module.exports = {
                 .setTitle(executorIsEN ? "No Warned Staff" : "Uyarı Alan Yetkili Yok")
                 .setDescription(executorIsEN 
                     ? "**There Are No Staff Members With Active Warnings.**" 
-                    : "**Şu Anda Aktif Bir Uyarısı Olan Yetkili Bulunmuyor.")
+                    : "**Şu Anda Aktif Bir Uyarısı Olan Yetkili Bulunmuyor.**")
                 .setColor("Yellow");
             return interaction.reply({ embeds: [emptyEmbed] });
         }
