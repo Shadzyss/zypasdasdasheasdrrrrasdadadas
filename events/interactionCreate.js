@@ -12,8 +12,8 @@ module.exports = {
         const STAFF_US = process.env.STAFF_US_ROLE_ID; 
         const CAT_US = process.env.TICKET_KATEGORI_US;
         
-        // --- DİL ROLLERİ (Yeni Eklendi) ---
-        const ROLE_TR_ID = process.env.ROLE_ID_TURKISH;
+        // --- DİL ROLLERİ ---
+        // ROLE_TR_ID artık kullanılmasa da tanımlı kalsın, biz sadece US kontrolü yapacağız.
         const ROLE_US_ID = process.env.ROLE_ID_ENGLISH;
 
         // --- CONFIGLER ---
@@ -114,7 +114,7 @@ module.exports = {
         }
 
         // ==========================================
-        //         BUTON KONTROLLERİ (CLAIM/UNCLAIM/CLOSE)
+        //         BUTON KONTROLLERİ
         // ==========================================
 
         // --- CLAIM ---
@@ -141,14 +141,15 @@ module.exports = {
 
             await interaction.update({ embeds: [claimedEmbed], components: [buttons] });
 
-            // --- YENİ EKLENEN MESAJ KISMI (SAHİPLENİLDİ) ---
-            const isClickerTR = interaction.member.roles.cache.has(ROLE_TR_ID);
+            // --- SAHİPLENİLDİ MESAJI ---
+            // MANTIK: Eğer kullanıcıda US rolü varsa -> EN, yoksa (TR veya hiç rol yok) -> TR
+            const isClickerUS = interaction.member.roles.cache.has(ROLE_US_ID);
             
             const claimNotifyEmbed = new EmbedBuilder()
-                .setTitle(isClickerTR ? "Ticket Sahiplenildi" : "Ticket Claimed")
-                .setDescription(isClickerTR
-                    ? `**Ticket ${interaction.user} Tarafından Sahiplenildi. Bırakmak İçin 📌 Butonuna Tıklayın**`
-                    : `**Ticket claimed by ${interaction.user}. Click 📌 to unclaim.**`)
+                .setTitle(isClickerUS ? "Ticket Claimed" : "Ticket Sahiplenildi")
+                .setDescription(isClickerUS
+                    ? `**Ticket claimed by ${interaction.user}. Click 📌 to unclaim.**`
+                    : `**Ticket ${interaction.user} Tarafından Sahiplenildi. Bırakmak İçin 📌 Butonuna Tıklayın**`)
                 .setColor("Green");
 
             interaction.channel.send({ embeds: [claimNotifyEmbed] }).then(msg => {
@@ -177,14 +178,15 @@ module.exports = {
 
             await interaction.update({ embeds: [unclaimedEmbed], components: [buttons] });
 
-            // --- YENİ EKLENEN MESAJ KISMI (BIRAKILDI) ---
-            const isClickerTR = interaction.member.roles.cache.has(ROLE_TR_ID);
+            // --- BIRAKILDI MESAJI ---
+            // MANTIK: Eğer kullanıcıda US rolü varsa -> EN, yoksa (TR veya hiç rol yok) -> TR
+            const isClickerUS = interaction.member.roles.cache.has(ROLE_US_ID);
 
             const unclaimNotifyEmbed = new EmbedBuilder()
-                .setTitle(isClickerTR ? "Ticket Bırakıldı" : "Ticket Unclaimed")
-                .setDescription(isClickerTR
-                    ? `**Ticket ${interaction.user} Tarafından Bırakıldı. Geri Sahiplenmek İçin <:zyphera_yesilraptiye:1466044628506771588> Butonuna Tıklayın**`
-                    : `**Ticket unclaimed by ${interaction.user}. Click <:zyphera_yesilraptiye:1466044628506771588> to claim again.**`)
+                .setTitle(isClickerUS ? "Ticket Unclaimed" : "Ticket Bırakıldı")
+                .setDescription(isClickerUS
+                    ? `**Ticket unclaimed by ${interaction.user}. Click <:zyphera_yesilraptiye:1466044628506771588> to claim again.**`
+                    : `**Ticket ${interaction.user} Tarafından Bırakıldı. Geri Sahiplenmek İçin <:zyphera_yesilraptiye:1466044628506771588> Butonuna Tıklayın**`)
                 .setColor("Red");
 
             interaction.channel.send({ embeds: [unclaimNotifyEmbed] }).then(msg => {
@@ -224,7 +226,7 @@ module.exports = {
                 try {
                     await interaction.channel.permissionOverwrites.edit(ticketData.ownerID, { ViewChannel: false });
                 } catch (error) {
-                    console.log("Kullanıcı sunucudan çıktığı için izinler düzenlenemedi, işlem devam ediyor.");
+                    // Kullanıcı yoksa işlem devam eder
                 }
             }
             // ------------------------------------------------------------
