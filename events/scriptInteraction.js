@@ -79,7 +79,8 @@ module.exports = {
                 const logChannel = interaction.guild.channels.cache.get(logChannelId);
                 
                 if (logChannel) {
-                    const embed = new EmbedBuilder()
+                    // 1. Log kanalına giden embed (RANDOM RENK)
+                    const logEmbed = new EmbedBuilder()
                         .setTitle('Bir Öneri Geldi!')
                         .setDescription(`
 **Öneriyi Yapan Kişi:**
@@ -100,10 +101,24 @@ ${scriptFeatures}
                         .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
                         .setFooter({ text: 'Zyphera Script Öneri', iconURL: interaction.guild.iconURL() });
 
-                    await logChannel.send({ embeds: [embed] });
-                    await interaction.reply({ content: '✅ Öneriniz başarıyla yetkililere iletildi!', ephemeral: true });
+                    await logChannel.send({ embeds: [logEmbed] });
+
+                    // 2. Kullanıcıya giden BAŞARILI mesajı (YEŞİL EMBED)
+                    const successEmbed = new EmbedBuilder()
+                        .setTitle('✅ Başarılı')
+                        .setDescription(`**Öneriniz başarıyla yetkililere iletildi!**`)
+                        .setColor('Green');
+
+                    await interaction.reply({ embeds: [successEmbed], ephemeral: true });
+
                 } else {
-                    await interaction.reply({ content: '❌ Log kanalı bulunamadı! Lütfen yetkiliye bildirin.', ephemeral: true });
+                    // 3. Kanal bulunamazsa HATA mesajı (KIRMIZI EMBED)
+                    const errorEmbed = new EmbedBuilder()
+                        .setTitle('❌ Hata')
+                        .setDescription('**Log kanalı bulunamadı! Lütfen yetkiliye bildirin.**')
+                        .setColor('Red');
+
+                    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
                 }
             }
 
@@ -117,7 +132,8 @@ ${scriptFeatures}
                 const logChannel = interaction.guild.channels.cache.get(logChannelId);
 
                 if (logChannel) {
-                    const embed = new EmbedBuilder()
+                    // 1. Log kanalına giden embed (RANDOM RENK)
+                    const logEmbed = new EmbedBuilder()
                         .setTitle('A Suggestion Arrived!')
                         .setDescription(`
 **Suggester:**
@@ -138,10 +154,24 @@ ${scriptFeatures}
                         .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
                         .setFooter({ text: 'Zyphera Script Suggestion', iconURL: interaction.guild.iconURL() });
 
-                    await logChannel.send({ embeds: [embed] });
-                    await interaction.reply({ content: '✅ Your suggestion has been sent to the staff!', ephemeral: true });
+                    await logChannel.send({ embeds: [logEmbed] });
+
+                    // 2. Kullanıcıya giden BAŞARILI mesajı (YEŞİL EMBED)
+                    const successEmbed = new EmbedBuilder()
+                        .setTitle('✅ Success')
+                        .setDescription(`**Your suggestion has been successfully sent to the staff!**`)
+                        .setColor('Green');
+
+                    await interaction.reply({ embeds: [successEmbed], ephemeral: true });
+
                 } else {
-                    await interaction.reply({ content: '❌ Log channel not found! Please contact staff.', ephemeral: true });
+                    // 3. Kanal bulunamazsa HATA mesajı (KIRMIZI EMBED)
+                    const errorEmbed = new EmbedBuilder()
+                        .setTitle('❌ Error')
+                        .setDescription('**Log channel not found! Please contact staff.**')
+                        .setColor('Red');
+
+                    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
                 }
             }
         }
