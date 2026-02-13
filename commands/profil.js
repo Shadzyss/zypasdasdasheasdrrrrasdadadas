@@ -20,21 +20,16 @@ module.exports = {
 
         // --- 2. HEDEF KULLANICIYI BELİRLE ---
         const targetUserOption = interaction.options.getUser('kullanıcı') || interaction.user;
-        
-        // Banner ve renk için fetch
         const targetUser = await interaction.client.users.fetch(targetUserOption.id, { force: true });
 
         let targetMember;
         try {
             targetMember = await guild.members.fetch(targetUser.id);
         } catch (error) {
-            return interaction.reply({ content: isEnglish ? 'User not found in this server.' : 'Kullanıcı sunucuda bulunamadı.', ephemeral: true });
+            return interaction.reply({ content: isEnglish ? 'User not found.' : 'Kullanıcı bulunamadı.', ephemeral: true });
         }
 
-        // --- 3. PROFIL VERİLERİNİ HESAPLAMA (Önceki kodun aynısı) ---
-        // (Aşağıdaki kısımlar senin mevcut sistemin, burayı değiştirmedim sadece yapıyı korudum)
-        
-        // Katılım Sırası
+        // --- 3. PROFIL VERİLERİ (Mevcut kodların) ---
         const sortedMembers = guild.members.cache.sort((a, b) => a.joinedTimestamp - b.joinedTimestamp);
         const joinPosition = Array.from(sortedMembers.values()).indexOf(targetMember) + 1;
         const joinRankText = `**#${joinPosition}** / ${guild.memberCount}`;
@@ -54,7 +49,7 @@ module.exports = {
             }
         }
 
-        // Durum Metni
+        // Durum
         let status = "offline";
         if (targetMember.presence) status = targetMember.presence.status;
         const statusMap = {
@@ -65,7 +60,7 @@ module.exports = {
         };
         const displayStatus = statusMap[status] || (isEnglish ? "Offline/Invisible" : "Çevrimdışı/Görünmez");
 
-        // Yetki Kontrolleri
+        // Yetki Bilgileri
         const isBotStaffCheck = await Admin.findOne({ userId: targetUser.id });
         const isBotStaff = isBotStaffCheck ? (isEnglish ? "`✅ Yes`" : "`✅ Evet`") : (isEnglish ? "`❌ No`" : "`❌ Hayır`");
         const isAdminCheck = targetMember.permissions.has(PermissionFlagsBits.Administrator);
@@ -108,7 +103,7 @@ module.exports = {
             } else nextExpiration = isEnglish ? "`No Keys`" : "`Key Yok`";
         }
 
-        // Embed Metinleri
+        // Metinler
         const labels = {
             title: isEnglish ? `${targetUser.username}'s Profile` : `${targetUser.username} Adlı Kişinin Profili`,
             userInfo: isEnglish ? "`----- 👤 User Information 👤 -----`" : "`----- 👤 Kullanıcı Bilgileri 👤 -----`",
@@ -169,8 +164,7 @@ ${labels.expiration} --> ${nextExpiration}**
             embed.setImage(targetUser.bannerURL({ size: 1024, extension: 'png' }));
         }
 
-        // --- 4. BUTONLAR (GÜNCELLENDİ) ---
-        // Roller kaldırıldı, İzinler, Banner, Avatar kaldı
+        // --- BUTONLAR ---
         const btnLabels = {
             perms: isEnglish ? "Permissions" : "İzinler",
             banner: isEnglish ? "Banner" : "Banner",
@@ -185,47 +179,83 @@ ${labels.expiration} --> ${nextExpiration}**
 
         const replyMessage = await interaction.reply({ embeds: [embed], components: [row] });
 
-        // --- 5. ETKİLEŞİM VE COLLECTOR (10 SANİYE) ---
+        // --- COLLECTOR (SÜRESİZ GİBİ ÇALIŞIR) ---
+        // Zamanı çok yüksek veriyoruz, 'end' eventi ile butonları kapatmayı sildik.
         const filter = i => i.user.id === interaction.user.id;
-        const collector = replyMessage.createMessageComponentCollector({ filter, time: 10000, componentType: ComponentType.Button });
+        const collector = replyMessage.createMessageComponentCollector({ filter, time: 999_999_999, componentType: ComponentType.Button });
 
         collector.on('collect', async i => {
-            // --- İZİNLER ---
+            
+            // --- İZİNLER BUTONU ---
             if (i.customId === 'btn_perms') {
                 let descText = "";
 
+                // 1. Durum: Yönetici ise
                 if (targetMember.permissions.has(PermissionFlagsBits.Administrator)) {
-                    // YÖNETİCİ İSE
-                    descText = isEnglish ? "**User is Administrator**" : "**Kullanıcı Yönetici**";
-                } else {
-                    // YÖNETİCİ DEĞİLSE İZİNLERİ SIRALA
-                    // Önemli izinleri çeviri haritası ile eşleştiriyoruz
-                    const permMap = {
-                        ManageGuild: { tr: "Sunucuyu Yönet", en: "Manage Server" },
-                        ManageRoles: { tr: "Rolleri Yönet", en: "Manage Roles" },
-                        ManageChannels: { tr: "Kanalları Yönet", en: "Manage Channels" },
-                        KickMembers: { tr: "Üyeleri At", en: "Kick Members" },
-                        BanMembers: { tr: "Üyeleri Yasakla", en: "Ban Members" },
-                        ManageMessages: { tr: "Mesajları Yönet", en: "Manage Messages" },
-                        ManageNicknames: { tr: "Kullanıcı Adlarını Yönet", en: "Manage Nicknames" },
-                        MentionEveryone: { tr: "Everyone/Here Etiketle", en: "Mention Everyone" },
-                        MuteMembers: { tr: "Üyeleri Sustur", en: "Mute Members" },
-                        DeafenMembers: { tr: "Üyeleri Sağırlaştır", en: "Deafen Members" },
-                        MoveMembers: { tr: "Üyeleri Taşı", en: "Move Members" },
-                        ViewAuditLog: { tr: "Denetim Kaydını Görüntüle", en: "View Audit Log" }
+                    descText = isEnglish 
+                        ? "**⚠️ This User Has Administrator Permission.**" 
+                        : "**⚠️ Bu Kullanıcı Yönetici İznine Sahip.**";
+                } 
+                // 2. Durum: Yönetici değilse, TÜM yetkilerini listele
+                else {
+                    // Discord'daki çoğu yetkinin Türkçe karşılığı
+                    const permissionNames = {
+                        CreateInstantInvite: "Davet Oluştur",
+                        KickMembers: "Üyeleri At",
+                        BanMembers: "Üyeleri Yasakla",
+                        Administrator: "Yönetici",
+                        ManageChannels: "Kanalları Yönet",
+                        ManageGuild: "Sunucuyu Yönet",
+                        AddReactions: "Tepki Ekle",
+                        ViewAuditLog: "Denetim Kaydını Görüntüle",
+                        PrioritySpeaker: "Öncelikli Konuşmacı",
+                        Stream: "Yayın Aç",
+                        ViewChannel: "Kanalları Gör",
+                        SendMessages: "Mesaj Gönder",
+                        SendTTSMessages: "TTS Mesaj Gönder",
+                        ManageMessages: "Mesajları Yönet",
+                        EmbedLinks: "Bağlantı Yerleştir",
+                        AttachFiles: "Dosya Ekle",
+                        ReadMessageHistory: "Mesaj Geçmişini Oku",
+                        MentionEveryone: "@everyone/@here Etiketle",
+                        UseExternalEmojis: "Harici Emoji Kullan",
+                        ViewGuildInsights: "Sunucu Bilgilerini Gör",
+                        Connect: "Bağlan",
+                        Speak: "Konuş",
+                        MuteMembers: "Üyeleri Sustur",
+                        DeafenMembers: "Üyeleri Sağırlaştır",
+                        MoveMembers: "Üyeleri Taşı",
+                        UseVAD: "Ses Eylemi Kullan",
+                        ChangeNickname: "Kullanıcı Adı Değiştir",
+                        ManageNicknames: "Kullanıcı Adlarını Yönet",
+                        ManageRoles: "Rolleri Yönet",
+                        ManageWebhooks: "Webhookları Yönet",
+                        ManageEmojisAndStickers: "Emoji ve Çıkartmaları Yönet",
+                        UseApplicationCommands: "Uygulama Komutlarını Kullan",
+                        RequestToSpeak: "Konuşma İsteği",
+                        ManageEvents: "Etkinlikleri Yönet",
+                        ManageThreads: "Alt Başlıkları Yönet",
+                        CreatePublicThreads: "Herkese Açık Alt Başlık Oluştur",
+                        CreatePrivateThreads: "Gizli Alt Başlık Oluştur",
+                        UseExternalStickers: "Harici Çıkartma Kullan",
+                        SendMessagesInThreads: "Alt Başlıklarda Mesaj Gönder",
+                        UseEmbeddedActivities: "Gömülü Aktiviteleri Kullan",
+                        ModerateMembers: "Üyeleri Denetle (Timeout)"
                     };
 
-                    const userPerms = [];
-                    for (const [permKey, labels] of Object.entries(permMap)) {
-                        if (targetMember.permissions.has(PermissionFlagsBits[permKey])) {
-                            userPerms.push(`• ${isEnglish ? labels.en : labels.tr}`);
-                        }
-                    }
+                    // Kullanıcının sahip olduğu izinleri array'e çevir
+                    const rawPerms = targetMember.permissions.toArray();
+                    
+                    const userPerms = rawPerms.map(perm => {
+                        // Varsa Türkçe karşılığını, yoksa İngilizce halini al
+                        const trName = permissionNames[perm];
+                        return `• ${isEnglish ? perm : (trName || perm)}`;
+                    });
 
                     if (userPerms.length > 0) {
                         descText = userPerms.join('\n');
                     } else {
-                        descText = isEnglish ? "**User has no critical permissions.**" : "**Kullanıcının kritik bir yetkisi yok.**";
+                        descText = isEnglish ? "**User has no permissions.**" : "**Kullanıcının hiçbir yetkisi yok.**";
                     }
                 }
 
@@ -237,12 +267,11 @@ ${labels.expiration} --> ${nextExpiration}**
                 await i.reply({ embeds: [permEmbed], ephemeral: true });
             }
 
-            // --- BANNER ---
+            // --- BANNER BUTONU ---
             if (i.customId === 'btn_banner') {
                 const bannerUrl = targetUser.bannerURL({ size: 1024, extension: 'png' });
                 
                 if (bannerUrl) {
-                    // Banner Varsa
                     const bannerEmbed = new EmbedBuilder()
                         .setTitle(`${targetUser.username} Banner`)
                         .setDescription(`[${isEnglish ? "Download Banner" : "Banner'ı İndir"}](${bannerUrl})`)
@@ -250,7 +279,6 @@ ${labels.expiration} --> ${nextExpiration}**
                         .setColor('Random');
                     await i.reply({ embeds: [bannerEmbed], ephemeral: true });
                 } else {
-                    // Banner Yoksa (KIRMIZI VE KALIN HATA)
                     const errorEmbed = new EmbedBuilder()
                         .setColor('Red')
                         .setDescription(isEnglish ? "**User has no banner!**" : "**Kullanıcının Bannerı Yok!**");
@@ -258,7 +286,7 @@ ${labels.expiration} --> ${nextExpiration}**
                 }
             }
 
-            // --- AVATAR ---
+            // --- AVATAR BUTONU ---
             if (i.customId === 'btn_avatar') {
                 const avatarUrl = targetUser.displayAvatarURL({ size: 1024, dynamic: true });
                 const avatarEmbed = new EmbedBuilder()
@@ -268,17 +296,6 @@ ${labels.expiration} --> ${nextExpiration}**
                     .setColor('Random');
                 await i.reply({ embeds: [avatarEmbed], ephemeral: true });
             }
-        });
-
-        // --- 6. SÜRE BİTİNCE BUTONLARI KAPAT ---
-        collector.on('end', () => {
-            const disabledRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('btn_perms').setLabel(btnLabels.perms).setStyle(ButtonStyle.Primary).setEmoji('🛡️').setDisabled(true),
-                new ButtonBuilder().setCustomId('btn_banner').setLabel(btnLabels.banner).setStyle(ButtonStyle.Secondary).setEmoji('🖼️').setDisabled(true),
-                new ButtonBuilder().setCustomId('btn_avatar').setLabel(btnLabels.avatar).setStyle(ButtonStyle.Secondary).setEmoji('👤').setDisabled(true)
-            );
-            
-            interaction.editReply({ components: [disabledRow] }).catch(() => {});
         });
     },
 };
