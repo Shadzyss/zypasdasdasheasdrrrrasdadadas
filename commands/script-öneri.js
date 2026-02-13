@@ -32,8 +32,7 @@ module.exports = {
         const subcommand = interaction.options.getSubcommand();
         const targetChannel = interaction.options.getChannel('kanal') || interaction.options.getChannel('channel');
 
-        // --- GIF URL (Senin attığın link) ---
-        // Not: Discord linkleri bir süre sonra kırılabilir, kalıcı bir link kullanmanı öneririm.
+        // --- GIF URL ---
         const gifUrl = "https://cdn.discordapp.com/attachments/1446511397793173504/1463858413137035295/YL6hODV.gif?ex=69905ce2&is=698f0b62&hm=fd08d52b1fef6cdc1448a4fa29e23529d95957bd09409333d3ddf2da80524ff6&";
 
         // --- TÜRKÇE SİSTEM KURULUMU ---
@@ -42,15 +41,15 @@ module.exports = {
                 .setTitle("Zyphera Script Öneri Sistemi")
                 .setDescription("**Merhaba Değerli Kullanıcılarımız, Script Önerisinde Bulunmak İçin <a:zyphera_yukleniyor:1464095331863101514> Butonuna Tıklayın**")
                 .setColor("Blue")
-                .setFooter("Zyphera Script Öneri Sistemi")
-                .setImage(gifUrl);
+                .setImage(gifUrl)
+                .setFooter({ text: 'Zyphera Script Öneri Sistemi' }); // Türkçe Footer Eklendi
 
             const rowTR = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('btn_script_oneri_tr')
                     .setEmoji('<a:zyphera_yukleniyor:1464095331863101514>')
                     .setLabel('Öneri Yap')
-                    .setStyle(ButtonStyle.Primary) // Mavi buton
+                    .setStyle(ButtonStyle.Primary)
             );
 
             await targetChannel.send({ embeds: [embedTR], components: [rowTR] });
@@ -63,8 +62,8 @@ module.exports = {
                 .setTitle("Zyphera Script Suggestion System")
                 .setDescription("**Hello Valuable Users, Click the <a:zyphera_yukleniyor:1464095331863101514> Button to Suggest a Script**")
                 .setColor("Blue")
-                .setFooter("Zyphera Script Suggestion System")
-                .setImage(gifUrl);
+                .setImage(gifUrl)
+                .setFooter({ text: 'Zyphera Script Suggestion System' }); // İngilizce Footer Eklendi
 
             const rowUS = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
