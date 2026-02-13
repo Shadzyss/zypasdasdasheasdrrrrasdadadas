@@ -42,6 +42,7 @@ module.exports = {
                 .setTitle("Zyphera Script Öneri Sistemi")
                 .setDescription("**Merhaba Değerli Kullanıcılarımız, Script Önerisinde Bulunmak İçin <a:zyphera_yukleniyor:1464095331863101514> Butonuna Tıklayın**")
                 .setColor("Blue")
+                .setFooter("Zyphera Script Öneri Sistemi")
                 .setImage(gifUrl);
 
             const rowTR = new ActionRowBuilder().addComponents(
@@ -62,6 +63,7 @@ module.exports = {
                 .setTitle("Zyphera Script Suggestion System")
                 .setDescription("**Hello Valuable Users, Click the <a:zyphera_yukleniyor:1464095331863101514> Button to Suggest a Script**")
                 .setColor("Blue")
+                .setFooter("Zyphera Script Suggestion System")
                 .setImage(gifUrl);
 
             const rowUS = new ActionRowBuilder().addComponents(

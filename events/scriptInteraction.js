@@ -69,6 +69,9 @@ module.exports = {
         // ===============================================
         if (interaction.isModalSubmit()) {
 
+            // --- ROL ID'si (Buraya tanımladık ki kolay değişsin) ---
+            const ROLE_ID = '1446481568657834097';
+
             // --- TÜRKÇE FORM LOGLAMA ---
             if (interaction.customId === 'mdl_script_oneri_tr') {
                 const scriptName = interaction.fields.getTextInputValue('input_script_name');
@@ -79,7 +82,6 @@ module.exports = {
                 const logChannel = interaction.guild.channels.cache.get(logChannelId);
                 
                 if (logChannel) {
-                    // 1. Log kanalına giden embed (RANDOM RENK)
                     const logEmbed = new EmbedBuilder()
                         .setTitle('Bir Öneri Geldi!')
                         .setDescription(`
@@ -99,11 +101,16 @@ ${scriptFeatures}
                         `)
                         .setColor('Random')
                         .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-                        .setFooter({ text: 'Zyphera Script Öneri', iconURL: interaction.guild.iconURL() });
+                        .setFooter({ text: 'Zyphera Script Öneri Sistemi', iconURL: interaction.guild.iconURL() });
 
-                    await logChannel.send({ embeds: [logEmbed] });
+                    // --- GÜNCELLEME BURADA ---
+                    // content: Rol etiketini buraya koyuyoruz.
+                    // embeds: Embed nesnesini buraya koyuyoruz.
+                    await logChannel.send({ 
+                        content: `<@&${ROLE_ID}>`, 
+                        embeds: [logEmbed] 
+                    });
 
-                    // 2. Kullanıcıya giden BAŞARILI mesajı (YEŞİL EMBED)
                     const successEmbed = new EmbedBuilder()
                         .setTitle('✅ Başarılı')
                         .setDescription(`**Öneriniz başarıyla yetkililere iletildi!**`)
@@ -112,7 +119,6 @@ ${scriptFeatures}
                     await interaction.reply({ embeds: [successEmbed], ephemeral: true });
 
                 } else {
-                    // 3. Kanal bulunamazsa HATA mesajı (KIRMIZI EMBED)
                     const errorEmbed = new EmbedBuilder()
                         .setTitle('❌ Hata')
                         .setDescription('**Log kanalı bulunamadı! Lütfen yetkiliye bildirin.**')
@@ -132,7 +138,6 @@ ${scriptFeatures}
                 const logChannel = interaction.guild.channels.cache.get(logChannelId);
 
                 if (logChannel) {
-                    // 1. Log kanalına giden embed (RANDOM RENK)
                     const logEmbed = new EmbedBuilder()
                         .setTitle('A Suggestion Arrived!')
                         .setDescription(`
@@ -152,11 +157,14 @@ ${scriptFeatures}
                         `)
                         .setColor('Random')
                         .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-                        .setFooter({ text: 'Zyphera Script Suggestion', iconURL: interaction.guild.iconURL() });
+                        .setFooter({ text: 'Zyphera Script Suggestion System', iconURL: interaction.guild.iconURL() });
 
-                    await logChannel.send({ embeds: [logEmbed] });
+                    // --- GÜNCELLEME BURADA ---
+                    await logChannel.send({ 
+                        content: `<@&${ROLE_ID}>`, 
+                        embeds: [logEmbed] 
+                    });
 
-                    // 2. Kullanıcıya giden BAŞARILI mesajı (YEŞİL EMBED)
                     const successEmbed = new EmbedBuilder()
                         .setTitle('✅ Success')
                         .setDescription(`**Your suggestion has been successfully sent to the staff!**`)
@@ -165,7 +173,6 @@ ${scriptFeatures}
                     await interaction.reply({ embeds: [successEmbed], ephemeral: true });
 
                 } else {
-                    // 3. Kanal bulunamazsa HATA mesajı (KIRMIZI EMBED)
                     const errorEmbed = new EmbedBuilder()
                         .setTitle('❌ Error')
                         .setDescription('**Log channel not found! Please contact staff.**')
