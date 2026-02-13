@@ -16,13 +16,12 @@ module.exports = {
         const { member, guild } = interaction;
         
         // --- 1. DİL KONTROLÜ ---
-        // Eğer US rolü varsa İngilizce, yoksa (TR rolü olsun olmasın) Türkçe
         const isEnglish = member.roles.cache.has(process.env.ROLE_ID_ENGLISH);
 
-        // --- 2. HEDEF KULLANICIYI BELİRLE VE VERİ ÇEK ---
+        // --- 2. HEDEF KULLANICIYI BELİRLE ---
         const targetUserOption = interaction.options.getUser('kullanıcı') || interaction.user;
         
-        // Banner rengini ve görselini alabilmek için "force: true" ile user fetch yapıyoruz
+        // Banner ve renk için fetch
         const targetUser = await interaction.client.users.fetch(targetUserOption.id, { force: true });
 
         let targetMember;
@@ -32,36 +31,32 @@ module.exports = {
             return interaction.reply({ content: isEnglish ? 'User not found in this server.' : 'Kullanıcı sunucuda bulunamadı.', ephemeral: true });
         }
 
-        // --- 3. YENİ ÖZELLİKLER HESAPLAMA ---
-
-        // A) Katılım Sırası (Join Position)
-        // Cache'deki üyeleri katılım tarihine göre sıralıyoruz
+        // --- 3. PROFIL VERİLERİNİ HESAPLAMA (Önceki kodun aynısı) ---
+        // (Aşağıdaki kısımlar senin mevcut sistemin, burayı değiştirmedim sadece yapıyı korudum)
+        
+        // Katılım Sırası
         const sortedMembers = guild.members.cache.sort((a, b) => a.joinedTimestamp - b.joinedTimestamp);
         const joinPosition = Array.from(sortedMembers.values()).indexOf(targetMember) + 1;
         const joinRankText = `**#${joinPosition}** / ${guild.memberCount}`;
 
-        // B) Cihaz Durumu (Client Status)
+        // Cihaz Durumu
         let deviceStatus = isEnglish ? "`Offline`" : "`Çevrimdışı`";
         let activeDevice = "";
-        
         if (targetMember.presence && targetMember.presence.clientStatus) {
             const status = targetMember.presence.clientStatus;
             const devices = [];
-            
             if (status.desktop) devices.push(isEnglish ? "Desktop 🖥️" : "Bilgisayar 🖥️");
             if (status.mobile) devices.push(isEnglish ? "Mobile 📱" : "Mobil 📱");
             if (status.web) devices.push(isEnglish ? "Web 🌐" : "Tarayıcı 🌐");
-            
             if (devices.length > 0) {
                 deviceStatus = devices.join(', ');
                 activeDevice = targetMember.presence.status === 'dnd' ? '🔴' : targetMember.presence.status === 'idle' ? '🟡' : '🟢';
             }
         }
 
-        // C) Durum Metni (Eski yapı korundu)
+        // Durum Metni
         let status = "offline";
         if (targetMember.presence) status = targetMember.presence.status;
-        
         const statusMap = {
             online: isEnglish ? "Online" : "Çevrimiçi",
             idle: isEnglish ? "Idle" : "Boşta",
@@ -70,24 +65,22 @@ module.exports = {
         };
         const displayStatus = statusMap[status] || (isEnglish ? "Offline/Invisible" : "Çevrimdışı/Görünmez");
 
-        // --- 4. YETKİ VE ROL KONTROLLERİ ---
+        // Yetki Kontrolleri
         const isBotStaffCheck = await Admin.findOne({ userId: targetUser.id });
         const isBotStaff = isBotStaffCheck ? (isEnglish ? "`✅ Yes`" : "`✅ Evet`") : (isEnglish ? "`❌ No`" : "`❌ Hayır`");
-
         const isAdminCheck = targetMember.permissions.has(PermissionFlagsBits.Administrator);
         const isAdmin = isAdminCheck ? (isEnglish ? "`✅ Yes`" : "`✅ Evet`") : (isEnglish ? "`❌ No`" : "`❌ Hayır`");
-
         const isSubStaffCheck = targetMember.roles.cache.has(process.env.ROLE_ID_ABONE_STAFF);
         const isSubStaff = isSubStaffCheck ? (isEnglish ? "`✅ Yes`" : "`✅ Evet`") : (isEnglish ? "`❌ No`" : "`❌ Hayır`");
 
-        // Rolleri string olarak hazırlama (Embed için kısaltılmış)
+        // Roller
         const roles = targetMember.roles.cache
             .filter(r => r.id !== guild.id) 
             .sort((a, b) => b.position - a.position)
             .map(r => r)
             .join(' ') || (isEnglish ? "No Roles" : "Rolü Yok");
 
-        // --- 5. TARİH VE KEY BİLGİLERİ ---
+        // Tarih ve Keyler
         const createdAtTs = Math.floor(targetUser.createdTimestamp / 1000);
         const joinedAtTs = targetMember.joinedTimestamp ? Math.floor(targetMember.joinedTimestamp / 1000) : null;
         const joinedAtDisplay = joinedAtTs ? `<t:${joinedAtTs}:F>` : (isEnglish ? "`Unknown`" : "`Bilinmiyor`");
@@ -97,39 +90,32 @@ module.exports = {
         let nextExpiration = isEnglish ? "`None`" : "`Yok`";
 
         if (targetUser.bot) {
-            const botMsg = isEnglish ? "`BOT`" : "`BOT`";
-            totalActiveKeys = botMsg;
-            hasAboneKey = botMsg;
-            nextExpiration = botMsg;
+            const botMsg = "`BOT`";
+            totalActiveKeys = botMsg; hasAboneKey = botMsg; nextExpiration = botMsg;
         } else {
             const subKeys = await SubscriberKey.find({ ownerId: targetUser.id });
             const genKeys = await GeneralKey.find({ ownerId: targetUser.id });
             const allKeys = [...subKeys, ...genKeys];
-
             totalActiveKeys = `\`${allKeys.length}\``;
             if (subKeys.length > 0) hasAboneKey = isEnglish ? "`✅ Yes`" : "`✅ Evet`";
-
-            const timedKeys = allKeys.filter(k => k.expiresAt && !isNaN(new Date(k.expiresAt).getTime()));
             
-            if (allKeys.length > 0 && timedKeys.length === 0) {
-                nextExpiration = isEnglish ? "`Unlimited`" : "`Sınırsız`";
-            } else if (timedKeys.length > 0) {
+            const timedKeys = allKeys.filter(k => k.expiresAt && !isNaN(new Date(k.expiresAt).getTime()));
+            if (allKeys.length > 0 && timedKeys.length === 0) nextExpiration = isEnglish ? "`Unlimited`" : "`Sınırsız`";
+            else if (timedKeys.length > 0) {
                 timedKeys.sort((a, b) => new Date(a.expiresAt) - new Date(b.expiresAt));
                 const nearestDate = Math.floor(new Date(timedKeys[0].expiresAt).getTime() / 1000);
                 nextExpiration = `<t:${nearestDate}:R>`; 
-            } else {
-                nextExpiration = isEnglish ? "`No Keys`" : "`Key Yok`";
-            }
+            } else nextExpiration = isEnglish ? "`No Keys`" : "`Key Yok`";
         }
 
-        // --- 6. METİN TANIMLAMALARI ---
+        // Embed Metinleri
         const labels = {
             title: isEnglish ? `${targetUser.username}'s Profile` : `${targetUser.username} Adlı Kişinin Profili`,
             userInfo: isEnglish ? "`----- 👤 User Information 👤 -----`" : "`----- 👤 Kullanıcı Bilgileri 👤 -----`",
             username: isEnglish ? "👤 Username" : "👤 Kullanıcı Adı",
             id: isEnglish ? "🆔 User ID" : "🆔 Kullanıcının ID'si",
-            device: isEnglish ? "📱 Device/Activity" : "📱 Cihaz/Aktivite", // YENİ
-            joinRank: isEnglish ? "🔢 Join Rank" : "🔢 Katılım Sırası", // YENİ
+            device: isEnglish ? "📱 Device/Activity" : "📱 Cihaz/Aktivite",
+            joinRank: isEnglish ? "🔢 Join Rank" : "🔢 Katılım Sırası",
             displayName: isEnglish ? "👥 Server Name" : "👥 Kişinin Sunucudaki Adı",
             status: isEnglish ? "🟣 User Status" : "🟣 Kişinin Durumu",
             staffInfo: isEnglish ? "`----- ⚒️ Authority Information ⚒️ -----`" : "`----- ⚒️ Yetki Bilgileri ⚒️ -----`",
@@ -147,7 +133,6 @@ module.exports = {
             footer: isEnglish ? `Command Used By --> ${interaction.user.username}` : `Komutu Kullanan --> ${interaction.user.username}`
         };
 
-        // --- 7. EMBED OLUŞTURMA ---
         const embed = new EmbedBuilder()
             .setTitle(labels.title)
             .setDescription(`
@@ -176,93 +161,124 @@ ${labels.totalKeys} --> ${totalActiveKeys}
 ${labels.hasSubKey} --> ${hasAboneKey}
 ${labels.expiration} --> ${nextExpiration}**
             `)
-            .setColor(targetUser.hexAccentColor || 'Random') // Varsa kullanıcının profil rengi
+            .setColor(targetUser.hexAccentColor || 'Random')
             .setThumbnail(targetUser.displayAvatarURL({ dynamic: true, size: 512 }))
-            .setFooter({ 
-                text: labels.footer, 
-                iconURL: interaction.user.displayAvatarURL({ dynamic: true }) 
-            });
+            .setFooter({ text: labels.footer, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) });
 
-        // Banner varsa embed'e ekle
         if (targetUser.bannerURL()) {
             embed.setImage(targetUser.bannerURL({ size: 1024, extension: 'png' }));
         }
 
-        // --- 8. BUTONLAR ---
+        // --- 4. BUTONLAR (GÜNCELLENDİ) ---
+        // Roller kaldırıldı, İzinler, Banner, Avatar kaldı
         const btnLabels = {
             perms: isEnglish ? "Permissions" : "İzinler",
-            roles: isEnglish ? "Roles" : "Roller",
             banner: isEnglish ? "Banner" : "Banner",
             avatar: isEnglish ? "Avatar" : "Avatar"
         };
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('btn_perms').setLabel(btnLabels.perms).setStyle(ButtonStyle.Primary).setEmoji('🛡️'),
-            new ButtonBuilder().setCustomId('btn_roles').setLabel(btnLabels.roles).setStyle(ButtonStyle.Secondary).setEmoji('🎭'),
             new ButtonBuilder().setCustomId('btn_banner').setLabel(btnLabels.banner).setStyle(ButtonStyle.Secondary).setEmoji('🖼️'),
             new ButtonBuilder().setCustomId('btn_avatar').setLabel(btnLabels.avatar).setStyle(ButtonStyle.Secondary).setEmoji('👤')
         );
 
         const replyMessage = await interaction.reply({ embeds: [embed], components: [row] });
 
-        // --- 9. BUTON ETKİLEŞİMLERİ (COLLECTOR) ---
-        const filter = i => i.user.id === interaction.user.id; // Sadece komutu kullanan basabilsin
-        const collector = replyMessage.createMessageComponentCollector({ filter, time: 60000, componentType: ComponentType.Button });
+        // --- 5. ETKİLEŞİM VE COLLECTOR (10 SANİYE) ---
+        const filter = i => i.user.id === interaction.user.id;
+        const collector = replyMessage.createMessageComponentCollector({ filter, time: 10000, componentType: ComponentType.Button });
 
         collector.on('collect', async i => {
+            // --- İZİNLER ---
             if (i.customId === 'btn_perms') {
-                // Önemli izinleri filtrele
-                const keyPerms = [
-                    PermissionFlagsBits.Administrator, PermissionFlagsBits.ManageGuild, 
-                    PermissionFlagsBits.BanMembers, PermissionFlagsBits.KickMembers, 
-                    PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles,
-                    PermissionFlagsBits.ManageMessages
-                ];
-                
-                const userPerms = targetMember.permissions.toArray()
-                    .filter(p => keyPerms.some(kp => targetMember.permissions.has(kp)))
-                    .map(p => `\`${p}\``)
-                    .join(', ') || (isEnglish ? "No key permissions" : "Önemli yetkisi yok");
+                let descText = "";
 
-                await i.reply({ content: `👮‍♂️ **${targetUser.username} ${isEnglish ? "Permissions" : "Yetkileri"}:**\n${userPerms}`, ephemeral: true });
-            }
-
-            if (i.customId === 'btn_roles') {
-                // Rolleri listele (everyone hariç)
-                const roleList = targetMember.roles.cache
-                    .filter(r => r.id !== guild.id)
-                    .sort((a, b) => b.position - a.position)
-                    .map(r => r.toString())
-                    .join(', ') || "Yok";
-                
-                // Eğer çok uzunsa dosya yapabiliriz ama şimdilik ephemeral mesaj
-                if (roleList.length > 1900) {
-                    await i.reply({ content: isEnglish ? "Too many roles to list!" : "Listelenecek çok fazla rol var!", ephemeral: true });
+                if (targetMember.permissions.has(PermissionFlagsBits.Administrator)) {
+                    // YÖNETİCİ İSE
+                    descText = isEnglish ? "**User is Administrator**" : "**Kullanıcı Yönetici**";
                 } else {
-                    await i.reply({ content: `🎭 **${targetUser.username} ${isEnglish ? "Roles" : "Rolleri"}:**\n${roleList}`, ephemeral: true });
+                    // YÖNETİCİ DEĞİLSE İZİNLERİ SIRALA
+                    // Önemli izinleri çeviri haritası ile eşleştiriyoruz
+                    const permMap = {
+                        ManageGuild: { tr: "Sunucuyu Yönet", en: "Manage Server" },
+                        ManageRoles: { tr: "Rolleri Yönet", en: "Manage Roles" },
+                        ManageChannels: { tr: "Kanalları Yönet", en: "Manage Channels" },
+                        KickMembers: { tr: "Üyeleri At", en: "Kick Members" },
+                        BanMembers: { tr: "Üyeleri Yasakla", en: "Ban Members" },
+                        ManageMessages: { tr: "Mesajları Yönet", en: "Manage Messages" },
+                        ManageNicknames: { tr: "Kullanıcı Adlarını Yönet", en: "Manage Nicknames" },
+                        MentionEveryone: { tr: "Everyone/Here Etiketle", en: "Mention Everyone" },
+                        MuteMembers: { tr: "Üyeleri Sustur", en: "Mute Members" },
+                        DeafenMembers: { tr: "Üyeleri Sağırlaştır", en: "Deafen Members" },
+                        MoveMembers: { tr: "Üyeleri Taşı", en: "Move Members" },
+                        ViewAuditLog: { tr: "Denetim Kaydını Görüntüle", en: "View Audit Log" }
+                    };
+
+                    const userPerms = [];
+                    for (const [permKey, labels] of Object.entries(permMap)) {
+                        if (targetMember.permissions.has(PermissionFlagsBits[permKey])) {
+                            userPerms.push(`• ${isEnglish ? labels.en : labels.tr}`);
+                        }
+                    }
+
+                    if (userPerms.length > 0) {
+                        descText = userPerms.join('\n');
+                    } else {
+                        descText = isEnglish ? "**User has no critical permissions.**" : "**Kullanıcının kritik bir yetkisi yok.**";
+                    }
                 }
+
+                const permEmbed = new EmbedBuilder()
+                    .setTitle(isEnglish ? `${targetUser.username}'s Permissions` : `${targetUser.username} Adlı Kişinin İzinleri`)
+                    .setDescription(descText)
+                    .setColor('Random');
+                
+                await i.reply({ embeds: [permEmbed], ephemeral: true });
             }
 
+            // --- BANNER ---
             if (i.customId === 'btn_banner') {
                 const bannerUrl = targetUser.bannerURL({ size: 1024, extension: 'png' });
+                
                 if (bannerUrl) {
+                    // Banner Varsa
                     const bannerEmbed = new EmbedBuilder()
                         .setTitle(`${targetUser.username} Banner`)
+                        .setDescription(`[${isEnglish ? "Download Banner" : "Banner'ı İndir"}](${bannerUrl})`)
                         .setImage(bannerUrl)
                         .setColor('Random');
                     await i.reply({ embeds: [bannerEmbed], ephemeral: true });
                 } else {
-                    await i.reply({ content: isEnglish ? "User has no banner." : "Kullanıcının bannerı yok.", ephemeral: true });
+                    // Banner Yoksa (KIRMIZI VE KALIN HATA)
+                    const errorEmbed = new EmbedBuilder()
+                        .setColor('Red')
+                        .setDescription(isEnglish ? "**User has no banner!**" : "**Kullanıcının Bannerı Yok!**");
+                    await i.reply({ embeds: [errorEmbed], ephemeral: true });
                 }
             }
 
+            // --- AVATAR ---
             if (i.customId === 'btn_avatar') {
+                const avatarUrl = targetUser.displayAvatarURL({ size: 1024, dynamic: true });
                 const avatarEmbed = new EmbedBuilder()
                     .setTitle(`${targetUser.username} Avatar`)
-                    .setImage(targetUser.displayAvatarURL({ size: 1024, dynamic: true }))
+                    .setDescription(`[${isEnglish ? "Download Avatar" : "Avatar'ı İndir"}](${avatarUrl})`)
+                    .setImage(avatarUrl)
                     .setColor('Random');
                 await i.reply({ embeds: [avatarEmbed], ephemeral: true });
             }
+        });
+
+        // --- 6. SÜRE BİTİNCE BUTONLARI KAPAT ---
+        collector.on('end', () => {
+            const disabledRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('btn_perms').setLabel(btnLabels.perms).setStyle(ButtonStyle.Primary).setEmoji('🛡️').setDisabled(true),
+                new ButtonBuilder().setCustomId('btn_banner').setLabel(btnLabels.banner).setStyle(ButtonStyle.Secondary).setEmoji('🖼️').setDisabled(true),
+                new ButtonBuilder().setCustomId('btn_avatar').setLabel(btnLabels.avatar).setStyle(ButtonStyle.Secondary).setEmoji('👤').setDisabled(true)
+            );
+            
+            interaction.editReply({ components: [disabledRow] }).catch(() => {});
         });
     },
 };
