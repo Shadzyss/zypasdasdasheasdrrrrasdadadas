@@ -17,7 +17,7 @@ module.exports = {
 
                 const nameInput = new TextInputBuilder()
                     .setCustomId('input_script_name')
-                    .setLabel("İstediğiniz Script")
+                    .setLabel("İstediğiniz Oyun Scripti")
                     .setPlaceholder("Örn: Blox Fruits Auto Farm")
                     .setStyle(TextInputStyle.Short)
                     .setRequired(true);
@@ -25,7 +25,7 @@ module.exports = {
                 const featuresInput = new TextInputBuilder()
                     .setCustomId('input_script_features')
                     .setLabel("Script Özellikleri")
-                    .setPlaceholder("Hangi özellikler olsun? Detaylı açıklayın.")
+                    .setPlaceholder("Hangi özellikler olsun? Örn:Fly,Aimbot Vb.")
                     .setStyle(TextInputStyle.Paragraph)
                     .setRequired(true);
 
@@ -44,7 +44,7 @@ module.exports = {
 
                 const nameInput = new TextInputBuilder()
                     .setCustomId('input_script_name')
-                    .setLabel("Desired Script")
+                    .setLabel("Desired Game Script")
                     .setPlaceholder("Ex: Blox Fruits Auto Farm")
                     .setStyle(TextInputStyle.Short)
                     .setRequired(true);
@@ -52,7 +52,7 @@ module.exports = {
                 const featuresInput = new TextInputBuilder()
                     .setCustomId('input_script_features')
                     .setLabel("Script Features")
-                    .setPlaceholder("What features should it have?")
+                    .setPlaceholder("What features should it have? Ex:Fly,Aimbot etc.")
                     .setStyle(TextInputStyle.Paragraph)
                     .setRequired(true);
 
@@ -88,7 +88,7 @@ ${interaction.user} (\`${interaction.user.id}\`)
 **Önerinin İstendiği Zaman**
 <t:${timestamp}:F> (<t:${timestamp}:R>)
 
-**İstenilen Script Adı:**
+**İstenilen Oyun Scripti:**
 \`${scriptName}\`
 
 **Scriptte İstenilen Özellikler**
@@ -126,7 +126,7 @@ ${interaction.user} (\`${interaction.user.id}\`)
 **Suggestion Time**
 <t:${timestamp}:F> (<t:${timestamp}:R>)
 
-**Desired Script Name:**
+**Desired Game Script Name:**
 \`${scriptName}\`
 
 **Desired Features**
