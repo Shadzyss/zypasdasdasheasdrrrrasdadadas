@@ -27,24 +27,33 @@ module.exports = {
 
             // --- PAYLAŞILACAK EMBED ---
             const shareEmbed = new EmbedBuilder()
-                .setTitle(gameName.toUpperCase())
+                .setTitle(`🚀 ${gameName.toUpperCase()}`)
                 .setDescription(`
-**- Script Link:
-\`\`\`js
-${scriptLink}
-\`\`\`
-- Menü Özellikleri / Menu Features
-${scriptFeatures}
-
-- Scripti Yapan Kişi
-<@${creatorId}>
-
-------------------------------
-🇹🇷 : Bütün Sorumluluk Size Aittir Zyphera Olarak Hiç Bir __Sorumluluk Kabul Etmiyoruz__
-🇺🇸 : All Responsibility Belongs to You. As Zyphera, We Accept No __Liability__**
+**------------------------------**
+**🇹🇷 : Bütün Sorumluluk Size Aittir Zyphera Olarak Hiç Bir __Sorumluluk Kabul Etmiyoruz__**
+**🇺🇸 : All Responsibility Belongs to You. As Zyphera, We Accept No __Liability__**
+**------------------------------**
                 `)
+                .addFields(
+                    { 
+                        name: '🔗 Script Link', 
+                        value: `\`\`\`js\n${scriptLink}\n\`\`\``, 
+                        inline: false 
+                    },
+                    { 
+                        name: '📜 Menü Özellikleri / Menu Features', 
+                        value: `\`\`\`yaml\n${scriptFeatures}\n\`\`\``, // Kod bloğu içinde daha güzel durur
+                        inline: false 
+                    },
+                    { 
+                        name: '👤 Scripti Yapan Kişi', 
+                        value: `<@${creatorId}> (\`${creatorId}\`)`, 
+                        inline: true 
+                    }
+                )
                 .setColor('Random')
-                .setTimestamp();
+                .setTimestamp()
+                .setFooter({ text: 'Zyphera Script Sharing', iconURL: interaction.guild.iconURL() });
 
             // Eğer bir resim linki girildiyse embed'e ekle
             if (scriptImage && scriptImage.startsWith('http')) {
