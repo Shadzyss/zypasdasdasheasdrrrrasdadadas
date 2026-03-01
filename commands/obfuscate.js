@@ -5,98 +5,103 @@ const axios = require('axios');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('obfuscate')
-        .setDescription('Yüklediğin veya yapıştırdığın Lua scriptini şifreler. / Obfuscates Lua scripts.')
-        // 1. SEÇENEK: Dosya Yükleme (Zorunlu DEĞİL)
+        .setDescription('Scriptini şifreler. Dosya, Metin veya Link kabul eder! / Obfuscates Lua scripts.')
         .addAttachmentOption(option => 
             option.setName('dosya')
-                .setDescription('PC için: Şifrelenecek .lua dosyasını buraya yükle')
+                .setDescription('PC için: .lua dosyasını buraya yükle')
                 .setRequired(false)
         )
-        // 2. SEÇENEK: Metin Yapıştırma (Zorunlu DEĞİL - MOBİLLER İÇİN)
         .addStringOption(option =>
-            option.setName('kod')
-                .setDescription('Mobil için: Şifrelenecek kodu direkt buraya yapıştır')
+            option.setName('kod_veya_link')
+                .setDescription('Mobil için: Kodu buraya yapıştır veya Pastebin linki at')
                 .setRequired(false)
         ),
 
     async execute(interaction) {
-        // --- DİL SİSTEMİ ---
+        // --- DİL VE YETKİ AYARLARI ---
         const hasTrRole = interaction.member.roles.cache.has(process.env.ROLE_ID_TURKISH);
         const hasEnRole = interaction.member.roles.cache.has(process.env.ROLE_ID_ENGLISH);
-        const lang = (hasEnRole && !hasTrRole) ? 'en' : 'tr';
         const scripterRoleId = process.env.ROLE_ID_SCRIPTER;
+        
+        // Eğer kullanıcıda US (EN) rolü varsa ve TR rolü yoksa İngilizce, aksi halde Türkçe.
+        const lang = (hasEnRole && !hasTrRole) ? 'en' : 'tr';
 
         const messages = {
             tr: {
                 noPerm: `Bu komutu kullanmak için <@&${scripterRoleId}> rolüne sahip olmalısın!`,
-                noInput: "Lütfen ya bir `.lua` dosyası yükle ya da `kod` kısmına scripti yapıştır!",
-                notLua: "Sadece `.lua` uzantılı dosyaları kabul ediyorum!",
-                engineErr: "Şifreleme sırasında API motoru hata verdi! (Scriptinde syntax hatası olabilir veya sunucu meşgul)",
-                success: "✅ **İşlem Başarılı!** Kodun ölümcül seviyede şifrelendi.",
+                noInput: "Lütfen bir dosya yükle, kodu yapıştır ya da bir link (Pastebin vb.) at!",
+                notLua: "Sadece `.lua` veya `.txt` uzantılı dosyaları kabul ediyorum!",
+                fetching: "⏳ Linkteki kod çekiliyor...",
+                engineErr: "Şifreleme sırasında API motoru hata verdi! (Script hatalı olabilir)",
+                success: "✅ **İşlem Başarılı!** Kodun ölümcül seviyede şifrelendi. O elemana at ağlasın! 😎",
                 generalErr: "İşlem sırasında beklenmedik bir hata oluştu."
             },
             en: {
                 noPerm: `You must have the <@&${scripterRoleId}> role to use this command!`,
-                noInput: "Please either upload a `.lua` file or paste the script into the `code` option!",
-                notLua: "I only accept `.lua` file extensions!",
-                engineErr: "The API engine encountered an error! (Syntax error in script or server busy)",
-                success: "✅ **Success!** Your code has been obfuscated at a lethal level.",
+                noInput: "Please upload a file, paste the code, or provide a link (e.g., Pastebin)!",
+                notLua: "I only accept `.lua` or `.txt` file extensions!",
+                fetching: "⏳ Fetching code from link...",
+                engineErr: "The API engine encountered an error! (Script might be invalid)",
+                success: "✅ **Success!** Your code has been obfuscated at a lethal level. Throw it in their face! 😎",
                 generalErr: "An unexpected error occurred during the process."
             }
         };
 
         const t = messages[lang];
+        const createErrorEmbed = (text) => new EmbedBuilder().setColor('Red').setDescription(`**${text}**`);
 
-        const createErrorEmbed = (text) => {
-            return new EmbedBuilder()
-                .setColor('Red')
-                .setDescription(`**${text}**`);
-        };
-
-        // Yetki Kontrolü
+        // 1. YETKİ KONTROLÜ
         if (!interaction.member.roles.cache.has(scripterRoleId)) {
             return interaction.reply({ embeds: [createErrorEmbed(t.noPerm)], ephemeral: true });
         }
 
         const file = interaction.options.getAttachment('dosya');
-        const codeText = interaction.options.getString('kod');
+        const rawInput = interaction.options.getString('kod_veya_link');
 
-        // İkisi de boşsa hata ver
-        if (!file && !codeText) {
+        // 2. GİRDİ KONTROLÜ
+        if (!file && !rawInput) {
             return interaction.reply({ embeds: [createErrorEmbed(t.noInput)], ephemeral: true });
         }
 
-        // Eğer dosya atılmışsa ama .lua değilse
-        if (file && !file.name.endsWith('.lua')) {
-            return interaction.reply({ embeds: [createErrorEmbed(t.notLua)], ephemeral: true });
+        // Dosya uzantısı esnek kontrolü
+        if (file) {
+            const fileName = file.name.toLowerCase();
+            if (!fileName.endsWith('.lua') && !fileName.endsWith('.txt')) {
+                return interaction.reply({ embeds: [createErrorEmbed(t.notLua)], ephemeral: true });
+            }
         }
 
         await interaction.deferReply(); 
 
-        // Sadece çıkış dosyası için yol belirliyoruz
         const outputPath = `./temp_out_${interaction.user.id}.lua`;
         const finalFileName = file ? `ZYPHERA_OBF_${file.name}` : `ZYPHERA_OBF_Mobil_Script.lua`;
 
         try {
             let asilKod = "";
 
-            // 1. VERİYİ OKUMA AŞAMASI (İndirmeden direkt RAM'e alıyoruz)
+            // 3. KODU ELDE ETME (DOSYA / LİNK / METİN)
             if (file) {
                 const response = await axios.get(file.url, { responseType: 'text' });
                 asilKod = response.data;
-            } else if (codeText) {
-                asilKod = codeText;
+            } else if (rawInput.startsWith('http')) {
+                // Link Dönüştürme (Pastebin linkini raw'a çevirir)
+                let fetchUrl = rawInput;
+                if (rawInput.includes('pastebin.com') && !rawInput.includes('/raw/')) {
+                    fetchUrl = rawInput.replace('pastebin.com/', 'pastebin.com/raw/');
+                }
+                const response = await axios.get(fetchUrl);
+                asilKod = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+            } else {
+                asilKod = rawInput;
             }
 
-            // 2. API İLE ŞİFRELEME AŞAMASI (LuaObfuscator Sunucuları)
-            // A) Kodu sunucuya yükleyip oturum (Session ID) açıyoruz
+            // 4. API İLE ŞİFRELEME (LUA OBFUSCATOR)
             const apiResponse = await axios.post('https://luaobfuscator.com/api/obfuscator/newscript', asilKod, {
                 headers: { 'Content-Type': 'text/plain' }
             });
 
             const sessionId = apiResponse.data.sessionId;
 
-            // B) Şifreleme ayarlarını gönderip motoru çalıştırıyoruz
             const obfuscateReq = await axios.post('https://luaobfuscator.com/api/obfuscator/obfuscate', {
                 sessionId: sessionId,
                 config: {
@@ -108,7 +113,7 @@ module.exports = {
 
             const sifreliKod = obfuscateReq.data.code;
 
-            // 3. ŞİFRELİ KODU DOSYAYA YAZIP DİSCORD'A GÖNDERME
+            // 5. ŞİFRELİ KODU GÖNDERME
             fs.writeFileSync(outputPath, sifreliKod);
             const obfuscatedFile = new AttachmentBuilder(outputPath, { name: finalFileName });
 
@@ -117,16 +122,14 @@ module.exports = {
                 files: [obfuscatedFile]
             });
 
-            // Temizlik: Sadece oluşturduğumuz output dosyasını siliyoruz
+            // Temizlik
             setTimeout(() => {
                 if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-            }, 2000); 
+            }, 3000); 
 
         } catch (error) {
-            console.error("Şifreleme API Hatası:", error?.response?.data || error.message);
+            console.error("Hata:", error?.response?.data || error.message);
             interaction.editReply({ embeds: [createErrorEmbed(t.engineErr)] });
-            
-            // Hata olursa yine de temizlik yap
             if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         }
     },
