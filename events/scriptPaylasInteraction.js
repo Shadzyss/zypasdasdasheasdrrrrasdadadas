@@ -28,12 +28,8 @@ module.exports = {
             // --- PAYLAŞILACAK EMBED ---
             const shareEmbed = new EmbedBuilder()
                 .setTitle(`🚀 ${gameName.toUpperCase()}`)
-                .setDescription(`
-**------------------------------**
-**🇹🇷 : Bütün Sorumluluk Size Aittir Zyphera Olarak Hiç Bir __Sorumluluk Kabul Etmiyoruz__**
-**🇺🇸 : All Responsibility Belongs to You. As Zyphera, We Accept No __Liability__**
-**------------------------------**
-                `)
+                .setColor('Random')
+                .setTimestamp()
                 .addFields(
                     { 
                         name: '🔗 Script Link', 
@@ -42,18 +38,21 @@ module.exports = {
                     },
                     { 
                         name: '📜 Menü Özellikleri / Menu Features', 
-                        value: `\`\`\`yaml\n${scriptFeatures}\n\`\`\``, // Kod bloğu içinde daha güzel durur
+                        value: `\`\`\`yaml\n${scriptFeatures}\n\`\`\``, 
                         inline: false 
                     },
                     { 
                         name: '👤 Scripti Yapan Kişi', 
                         value: `<@${creatorId}> (\`${creatorId}\`)`, 
                         inline: true 
+                    },
+                    {
+                        name: '⚠️ Önemli / Important',
+                        value: `**🇹🇷 : Bütün Sorumluluk Size Aittir Zyphera Olarak Hiç Bir __Sorumluluk Kabul Etmiyoruz__\n🇺🇸 : All Responsibility Belongs to You. As Zyphera, We Accept No __Liability__**`,
+                        inline: false
                     }
                 )
-                .setColor('Random')
-                .setTimestamp()
-                .setFooter({ text: 'Zyphera Script Sharing', iconURL: interaction.guild.iconURL() });
+                .setFooter({ text: 'Zyphera Script Sharing System', iconURL: interaction.guild.iconURL() });
 
             // Eğer bir resim linki girildiyse embed'e ekle
             if (scriptImage && scriptImage.startsWith('http')) {
