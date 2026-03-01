@@ -10,11 +10,11 @@ module.exports = {
             const scriptLink = interaction.fields.getTextInputValue('input_script_link');
             const scriptFeatures = interaction.fields.getTextInputValue('input_script_features');
             const creatorId = interaction.fields.getTextInputValue('input_creator_id');
+            const scriptImage = interaction.fields.getTextInputValue('input_script_image');
             
             const isEnglish = interaction.member.roles.cache.has(process.env.ROLE_ID_ENGLISH);
 
-            // --- ID GEÇERLİLİK KONTROLÜ ---
-            // Sadece sayıdan oluşup oluşmadığına bakıyoruz
+            // --- ID KONTROLÜ ---
             if (!/^\d+$/.test(creatorId)) {
                 const errorEmbed = new EmbedBuilder()
                     .setTitle(isEnglish ? "❌ Invalid ID" : "❌ Geçersiz ID")
@@ -46,14 +46,21 @@ ${scriptFeatures}
                 .setColor('Random')
                 .setTimestamp();
 
+            // Eğer bir resim linki girildiyse embed'e ekle
+            if (scriptImage && scriptImage.startsWith('http')) {
+                shareEmbed.setImage(scriptImage);
+            }
+
             // Mesajı kanala gönder
             await interaction.channel.send({ embeds: [shareEmbed] });
 
-            // Kullanıcıya gizli onay mesajı
-            await interaction.reply({ 
-                content: isEnglish ? "✅ Script shared successfully!" : "✅ Script başarıyla paylaşıldı!", 
-                ephemeral: true 
-            });
+            // Başarılı Mesajı
+            const successEmbed = new EmbedBuilder()
+                .setTitle(isEnglish ? "✅ Success" : "✅ Başarılı")
+                .setDescription(isEnglish ? "**Script shared successfully!**" : "**Script başarıyla paylaşıldı!**")
+                .setColor("Green");
+
+            await interaction.reply({ embeds: [successEmbed], ephemeral: true });
         }
     },
 };
