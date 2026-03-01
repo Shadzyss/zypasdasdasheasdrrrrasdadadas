@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
-const { exec } = require('child_process');
 const fs = require('fs');
 const axios = require('axios');
 
@@ -32,7 +31,7 @@ module.exports = {
                 noPerm: `Bu komutu kullanmak için <@&${scripterRoleId}> rolüne sahip olmalısın!`,
                 noInput: "Lütfen ya bir `.lua` dosyası yükle ya da `kod` kısmına scripti yapıştır!",
                 notLua: "Sadece `.lua` uzantılı dosyaları kabul ediyorum!",
-                engineErr: "Şifreleme sırasında motor hata verdi! (Scriptinde syntax hatası olabilir)",
+                engineErr: "Şifreleme sırasında API motoru hata verdi! (Scriptinde syntax hatası olabilir veya sunucu meşgul)",
                 success: "✅ **İşlem Başarılı!** Kodun ölümcül seviyede şifrelendi.",
                 generalErr: "İşlem sırasında beklenmedik bir hata oluştu."
             },
@@ -40,7 +39,7 @@ module.exports = {
                 noPerm: `You must have the <@&${scripterRoleId}> role to use this command!`,
                 noInput: "Please either upload a `.lua` file or paste the script into the `code` option!",
                 notLua: "I only accept `.lua` file extensions!",
-                engineErr: "The engine encountered an error during obfuscation!",
+                engineErr: "The API engine encountered an error! (Syntax error in script or server busy)",
                 success: "✅ **Success!** Your code has been obfuscated at a lethal level.",
                 generalErr: "An unexpected error occurred during the process."
             }
@@ -74,48 +73,61 @@ module.exports = {
 
         await interaction.deferReply(); 
 
-        const inputPath = `./temp_in_${interaction.user.id}.lua`;
+        // Sadece çıkış dosyası için yol belirliyoruz
         const outputPath = `./temp_out_${interaction.user.id}.lua`;
         const finalFileName = file ? `ZYPHERA_OBF_${file.name}` : `ZYPHERA_OBF_Mobil_Script.lua`;
 
         try {
-            // VERİYİ KAYDETME AŞAMASI
+            let asilKod = "";
+
+            // 1. VERİYİ OKUMA AŞAMASI (İndirmeden direkt RAM'e alıyoruz)
             if (file) {
-                // Eğer adam dosya yüklediyse dosyayı indir
-                const response = await axios.get(file.url, { responseType: 'arraybuffer' });
-                fs.writeFileSync(inputPath, response.data);
+                const response = await axios.get(file.url, { responseType: 'text' });
+                asilKod = response.data;
             } else if (codeText) {
-                // Eğer adam metin yapıştırdıysa, metni .lua dosyası olarak bota kaydet
-                fs.writeFileSync(inputPath, codeText, 'utf-8');
+                asilKod = codeText;
             }
 
-            // OBFUSCATE İŞLEMİ (Şimdilik exe varmış gibi)
-            const komut = `obfuscator.exe "${inputPath}" -o "${outputPath}"`;
-
-            exec(komut, async (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`Şifreleme Hatası: ${error}`);
-                    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-                    return interaction.editReply({ embeds: [createErrorEmbed(t.engineErr)] });
-                }
-
-                const obfuscatedFile = new AttachmentBuilder(outputPath, { name: finalFileName });
-
-                await interaction.editReply({
-                    content: t.success,
-                    files: [obfuscatedFile]
-                });
-
-                // Temizlik
-                setTimeout(() => {
-                    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-                    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-                }, 2000); 
+            // 2. API İLE ŞİFRELEME AŞAMASI (LuaObfuscator Sunucuları)
+            // A) Kodu sunucuya yükleyip oturum (Session ID) açıyoruz
+            const apiResponse = await axios.post('https://luaobfuscator.com/api/obfuscator/newscript', asilKod, {
+                headers: { 'Content-Type': 'text/plain' }
             });
 
+            const sessionId = apiResponse.data.sessionId;
+
+            // B) Şifreleme ayarlarını gönderip motoru çalıştırıyoruz
+            const obfuscateReq = await axios.post('https://luaobfuscator.com/api/obfuscator/obfuscate', {
+                sessionId: sessionId,
+                config: {
+                    MinifyAll: true,
+                    Virtualize: true,
+                    CustomPlugins: ["ControlFlowFlattenV1", "EncryptStrings"]
+                }
+            });
+
+            const sifreliKod = obfuscateReq.data.code;
+
+            // 3. ŞİFRELİ KODU DOSYAYA YAZIP DİSCORD'A GÖNDERME
+            fs.writeFileSync(outputPath, sifreliKod);
+            const obfuscatedFile = new AttachmentBuilder(outputPath, { name: finalFileName });
+
+            await interaction.editReply({
+                content: t.success,
+                files: [obfuscatedFile]
+            });
+
+            // Temizlik: Sadece oluşturduğumuz output dosyasını siliyoruz
+            setTimeout(() => {
+                if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+            }, 2000); 
+
         } catch (error) {
-            console.error("Genel Hata:", error);
-            interaction.editReply({ embeds: [createErrorEmbed(t.generalErr)] });
+            console.error("Şifreleme API Hatası:", error?.response?.data || error.message);
+            interaction.editReply({ embeds: [createErrorEmbed(t.engineErr)] });
+            
+            // Hata olursa yine de temizlik yap
+            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         }
     },
 };
