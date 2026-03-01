@@ -42,7 +42,7 @@ module.exports = {
                         inline: false 
                     },
                     { 
-                        name: '👤 Scripti Yapan Kişi', 
+                        name: '👤 Scripti Yapan Kişi / Scripts Owner', 
                         value: `<@${creatorId}> (\`${creatorId}\`)`, 
                         inline: true 
                     },
