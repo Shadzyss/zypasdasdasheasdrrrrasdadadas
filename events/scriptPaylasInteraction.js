@@ -46,7 +46,7 @@ module.exports = {
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('btn_copy_script_text')
-                    .setLabel(isEnglish ? 'Copy Script' : 'Scripti Kopyala')
+                    .setLabel(isEnglish ? 'Copy Script' : 'Script Link')
                     .setEmoji('📜')
                     .setStyle(ButtonStyle.Secondary)
             );
