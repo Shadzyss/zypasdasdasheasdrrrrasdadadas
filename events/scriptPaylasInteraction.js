@@ -74,7 +74,7 @@ module.exports = {
 
             // Kullanıcıya kopyalayabileceği şekilde gönderiyoruz
             await interaction.reply({
-                content: isEnglish ? `**Click and hold the message below to copy the script:**\n\n\`${rawScript}\`` : `**Aşağıdaki metne basılı tutarak scripti kolayca kopyalayabilirsin:**\n\n\`${rawScript}\``,
+                content: isEnglish ? `**\`\`\`js\n${rawScript}\n\`\`\`**` : `**\`\`\`js\n${rawScript}\n\`\`\`**`,
                 ephemeral: true
             });
         }
