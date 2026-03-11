@@ -282,4 +282,17 @@ for (const file of eventFiles) {
     }
 }
 
-client.login(process.env.CLIENT_TOKEN);
+// Token Render tarafından okunabiliyor mu kontrol edelim
+console.log("🔑 Token Kontrolü:", process.env.CLIENT_TOKEN ? "TOKEN OKUNDU" : "TOKEN BULUNAMADI!");
+
+// Discord'a girişi deneyip hatayı ekrana yansıtalım
+client.login(process.env.CLIENT_TOKEN)
+    .then(() => console.log("🟢 Discord'a başarıyla giriş yapıldı!"))
+    .catch(err => {
+        console.error("❌ DISCORD GİRİŞ HATASI:", err.message);
+        if (err.message.includes('Intents')) {
+            console.error("👉 ÇÖZÜM: Discord Developer Portal'dan 'Privileged Gateway Intents' ayarlarını açmalısın.");
+        } else if (err.message.includes('token')) {
+            console.error("👉 ÇÖZÜM: Render'daki CLIENT_TOKEN şifresi hatalı veya eksik.");
+        }
+    });
