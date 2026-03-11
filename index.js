@@ -65,7 +65,7 @@ const checkVoiceConnection = () => {
                 selfDeaf: true,
                 selfMute: true
             });
-            console.log("Bağlantı kesilmişti, kanala tekrar giriş yapıldı.");
+            console.log("🔊 Ses Kanalına Başarıyla Bağlanıldı.");
         } catch (error) {
             console.error("Ses kanalına bağlanırken hata oluştu:", error);
         }
