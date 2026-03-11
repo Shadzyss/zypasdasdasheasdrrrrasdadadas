@@ -286,6 +286,7 @@ for (const file of eventFiles) {
 console.log("🔑 Token Kontrolü:", process.env.CLIENT_TOKEN ? "TOKEN OKUNDU" : "TOKEN BULUNAMADI!");
 
 // Discord'a girişi deneyip hatayı ekrana yansıtalım
+client.on('debug', console.log);
 client.login(process.env.CLIENT_TOKEN)
     .then(() => console.log("🟢 Discord'a başarıyla giriş yapıldı!"))
     .catch(err => {
