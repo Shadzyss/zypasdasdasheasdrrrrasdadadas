@@ -55,7 +55,7 @@ module.exports = {
 
             const successEmbed = new EmbedBuilder()
                 .setTitle(isEnglish ? "✅ Success" : "✅ Başarılı")
-                .setDescription(isEnglish ? "**Script shared successfully!**" : "**Script başarıyla paylaşıldı!**")
+                .setDescription(isEnglish ? "**Script Shared Successfully!**" : "**Script Başarıyla Paylaşıldı!**")
                 .setColor("Green");
 
             await interaction.reply({ embeds: [successEmbed], ephemeral: true });
