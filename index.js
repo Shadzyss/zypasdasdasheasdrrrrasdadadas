@@ -130,6 +130,13 @@ app.get('/check-key', async (req, res) => {
         return res.json({ success: false, message: "Sunucu hatası! / Server error!" });
     }
 });
+
+// MongoDB Bağlantısı
+    mongoose.connect(process.env.MONGO_URI)
+        .then(() => console.log('✅ MongoDB bağlantısı başarılı.'))
+        .catch(err => console.error('❌ MongoDB bağlantı hatası:', err));
+
+////////////////////////////////////
 app.listen(PORT, () => {
     console.log(`🌍 Roblox API çalışıyor: Port ${PORT}`);
 });
@@ -137,11 +144,6 @@ app.listen(PORT, () => {
 // 🤖 DISCORD BOT EVENTS
 client.once('ready', async () => {
     console.log(`🤖 Giriş yapıldı: ${client.user.tag}`);
-
-    // MongoDB Bağlantısı
-    mongoose.connect(process.env.MONGO_URI)
-        .then(() => console.log('✅ MongoDB bağlantısı başarılı.'))
-        .catch(err => console.error('❌ MongoDB bağlantı hatası:', err));
 
     // Ses Bağlantısı ve Kontrolü
     checkVoiceConnection();
