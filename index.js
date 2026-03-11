@@ -163,59 +163,64 @@ client.once('ready', async () => {
 
     // 🕒 OTOMATİK SÜRE KONTROL SİSTEMİ
     setInterval(async () => {
-        const now = new Date();
-        const expiredGeneral = await GeneralKey.find({ expiresAt: { $ne: null, $lte: now } });
-        const expiredSub = await SubscriberKey.find({ expiresAt: { $ne: null, $lte: now } });
+        try {
+            const now = new Date();
+            const expiredGeneral = await GeneralKey.find({ expiresAt: { $ne: null, $lte: now } });
+            const expiredSub = await SubscriberKey.find({ expiresAt: { $ne: null, $lte: now } });
 
-        const processExpiredKey = async (keyData, Model) => {
-            try {
-                const guild = client.guilds.cache.get(process.env.GUILD_ID);
-                if (!guild) return;
-
-                const logChannel = guild.channels.cache.get(process.env.CHANNEL_ID_LOG_EXPIRED);
-                let member;
+            const processExpiredKey = async (keyData, Model) => {
                 try {
-                    member = await guild.members.fetch(keyData.ownerId);
-                } catch (e) {
-                    member = null;
+                    const guild = client.guilds.cache.get(process.env.GUILD_ID);
+                    if (!guild) return;
+
+                    const logChannel = guild.channels.cache.get(process.env.CHANNEL_ID_LOG_EXPIRED);
+                    let member;
+                    try {
+                        member = await guild.members.fetch(keyData.ownerId);
+                    } catch (e) {
+                        member = null;
+                    }
+
+                    const isEnglish = member ? member.roles.cache.has(process.env.ROLE_ID_ENGLISH) : false;
+                    const ticketChannelId = isEnglish ? process.env.CHANNEL_ID_TICKET_EN : process.env.CHANNEL_ID_TICKET_TR;
+
+                    const createdTs = Math.floor(new Date(keyData.createdAt).getTime() / 1000);
+                    const expiresTs = Math.floor(new Date(keyData.expiresAt).getTime() / 1000);
+
+                    const dmContent = isEnglish ? {
+                        title: "Your Key Has Expired",
+                        desc: `**⛓️‍💥 Expired Key --> ||\`${keyData.key}\`|| \n🆔 Expired Key ID --> \`${keyData.keyId}\` \n🪄 Key Creator --> <@${keyData.creatorId}> \n🧾 Creation Reason --> \`${keyData.reason}\` \n📜 Script Name --> \`${keyData.scriptName}\` \n⏰ Creation Time --> <t:${createdTs}:F> \n⏱️ Expiration Time --> <t:${expiresTs}:F> \n❗ __IF YOU THINK THERE IS AN ERROR, PLEASE OPEN A TICKET AT <#${ticketChannelId}>__**`
+                    } : {
+                        title: "Bir Key'iniz Süresi Doldu",
+                        desc: `**⛓️‍💥 Süresi Biten Key --> ||\`${keyData.key}\`|| \n🆔 Süresi Biten Key'in ID --> \`${keyData.keyId}\` \n🪄 Key'i Oluşturan Yetkili --> <@${keyData.creatorId}> \n🧾 Key'in Oluşturulma Sebebi --> \`${keyData.reason}\` \n📜 Script Adı --> \`${keyData.scriptName}\` \n⏰ Key'in Oluşturulma Zamanı --> <t:${createdTs}:F> \n⏱️ Key'in Bitiş Zamanı --> <t:${expiresTs}:F> \n❗ __EĞER BİR HATA OLDUĞUNU DÜŞÜNÜYORSANIZ <#${ticketChannelId}> KANALINDAN BİLET OLUŞTURUN__**`
+                    };
+
+                    if (member) {
+                        const dmEmbed = new EmbedBuilder().setTitle(dmContent.title).setDescription(dmContent.desc).setColor('Random');
+                        await member.send({ embeds: [dmEmbed] }).catch(() => {});
+                    }
+
+                    if (logChannel) {
+                        const logEmbed = new EmbedBuilder()
+                            .setTitle('Bir Key\'in Süresi Bitti')
+                            .setDescription(`**⛓️‍💥 Süresi Biten Key --> ||\`${keyData.key}\`|| \n🆔 Süresi Biten Key'in ID --> \`${keyData.keyId}\` \n🪄 Key'i Oluşturan Yetkili --> <@${keyData.creatorId}> \n👑 Key Sahibi --> <@${keyData.ownerId}> \n🧾 Key'in Oluşturulma Sebebi --> \`${keyData.reason}\` \n📜 Script Adı --> \`${keyData.scriptName}\` \n⏰ Key'in Oluşturulma Zamanı --> <t:${createdTs}:F> \n⏱️ Key'in Bitiş Zamanı --> <t:${expiresTs}:F>**`)
+                            .setColor('Random');
+                        await logChannel.send({ embeds: [logEmbed] });
+                    }
+
+                    await Model.deleteOne({ _id: keyData._id });
+                    console.log(`[OTOMATİK] ${keyData.keyId} ID'li key silindi.`);
+                } catch (err) {
+                    console.error("Otomatik silme hatası:", err);
                 }
+            };
 
-                const isEnglish = member ? member.roles.cache.has(process.env.ROLE_ID_ENGLISH) : false;
-                const ticketChannelId = isEnglish ? process.env.CHANNEL_ID_TICKET_EN : process.env.CHANNEL_ID_TICKET_TR;
-
-                const createdTs = Math.floor(new Date(keyData.createdAt).getTime() / 1000);
-                const expiresTs = Math.floor(new Date(keyData.expiresAt).getTime() / 1000);
-
-                const dmContent = isEnglish ? {
-                    title: "Your Key Has Expired",
-                    desc: `**⛓️‍💥 Expired Key --> ||\`${keyData.key}\`|| \n🆔 Expired Key ID --> \`${keyData.keyId}\` \n🪄 Key Creator --> <@${keyData.creatorId}> \n🧾 Creation Reason --> \`${keyData.reason}\` \n📜 Script Name --> \`${keyData.scriptName}\` \n⏰ Creation Time --> <t:${createdTs}:F> \n⏱️ Expiration Time --> <t:${expiresTs}:F> \n❗ __IF YOU THINK THERE IS AN ERROR, PLEASE OPEN A TICKET AT <#${ticketChannelId}>__**`
-                } : {
-                    title: "Bir Key'iniz Süresi Doldu",
-                    desc: `**⛓️‍💥 Süresi Biten Key --> ||\`${keyData.key}\`|| \n🆔 Süresi Biten Key'in ID --> \`${keyData.keyId}\` \n🪄 Key'i Oluşturan Yetkili --> <@${keyData.creatorId}> \n🧾 Key'in Oluşturulma Sebebi --> \`${keyData.reason}\` \n📜 Script Adı --> \`${keyData.scriptName}\` \n⏰ Key'in Oluşturulma Zamanı --> <t:${createdTs}:F> \n⏱️ Key'in Bitiş Zamanı --> <t:${expiresTs}:F> \n❗ __EĞER BİR HATA OLDUĞUNU DÜŞÜNÜYORSANIZ <#${ticketChannelId}> KANALINDAN BİLET OLUŞTURUN__**`
-                };
-
-                if (member) {
-                    const dmEmbed = new EmbedBuilder().setTitle(dmContent.title).setDescription(dmContent.desc).setColor('Random');
-                    await member.send({ embeds: [dmEmbed] }).catch(() => {});
-                }
-
-                if (logChannel) {
-                    const logEmbed = new EmbedBuilder()
-                        .setTitle('Bir Key\'in Süresi Bitti')
-                        .setDescription(`**⛓️‍💥 Süresi Biten Key --> ||\`${keyData.key}\`|| \n🆔 Süresi Biten Key'in ID --> \`${keyData.keyId}\` \n🪄 Key'i Oluşturan Yetkili --> <@${keyData.creatorId}> \n👑 Key Sahibi --> <@${keyData.ownerId}> \n🧾 Key'in Oluşturulma Sebebi --> \`${keyData.reason}\` \n📜 Script Adı --> \`${keyData.scriptName}\` \n⏰ Key'in Oluşturulma Zamanı --> <t:${createdTs}:F> \n⏱️ Key'in Bitiş Zamanı --> <t:${expiresTs}:F>**`)
-                        .setColor('Random');
-                    await logChannel.send({ embeds: [logEmbed] });
-                }
-
-                await Model.deleteOne({ _id: keyData._id });
-                console.log(`[OTOMATİK] ${keyData.keyId} ID'li key silindi.`);
-            } catch (err) {
-                console.error("Otomatik silme hatası:", err);
-            }
-        };
-
-        for (const key of expiredGeneral) await processExpiredKey(key, GeneralKey);
-        for (const key of expiredSub) await processExpiredKey(key, SubscriberKey);
+            for (const key of expiredGeneral) await processExpiredKey(key, GeneralKey);
+            for (const key of expiredSub) await processExpiredKey(key, SubscriberKey);
+        } catch (dbHata) {
+            // Veritabanı anlık yanıt vermezse botun tamamen çökmesini engeller.
+            console.error("Süre kontrolünde veritabanı gecikmesi yaşandı:", dbHata.message);
+        }
     }, 5000);
 });
 
